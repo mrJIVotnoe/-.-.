@@ -5,7 +5,7 @@
 
 import { Vessel, SharedTour, MapPoint } from '../types';
 
-export const VESSELS_DATA: Vessel[] = [
+export const RAW_VESSELS_DATA = [
   {
     id: 'julia-60',
     name: 'Эксклюзивная яхта «Джулия»',
@@ -511,6 +511,16 @@ export const VESSELS_DATA: Vessel[] = [
     responseTime: 12
   }
 ];
+
+export const VESSELS_DATA: Vessel[] = RAW_VESSELS_DATA.map(item => ({
+  source_type: 'internal',
+  source_name: 'JIV Флот (Прямое бронирование)',
+  original_url: `#booking-${item.id}`,
+  vessel_type: item.category as any,
+  geo_coordinates: { lat: item.latLon[0], lng: item.latLon[1] },
+  currency: 'RUB',
+  ...(item as any)
+}));
 
 export const SHARED_TOURS_DATA: SharedTour[] = [
   {

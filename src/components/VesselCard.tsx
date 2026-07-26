@@ -5,10 +5,11 @@
 
 import React from 'react';
 import { Vessel } from '../types';
-import { Users, Gauge, Anchor, ShieldCheck, Music, HelpCircle, Star, Sparkles, Radio } from 'lucide-react';
+import { Users, Gauge, Anchor, ShieldCheck, Music, HelpCircle, Star, Sparkles, Radio, ExternalLink, Globe, CheckCircle2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useTranslation } from '../lib/translations';
 import { getLocalizedVessel, getLocalizedHomeport } from '../lib/vesselLocalization';
+import { formatCurrencyPrice, convertFromRUB } from '../lib/currency';
 
 interface VesselCardProps {
   key?: string;
@@ -16,13 +17,15 @@ interface VesselCardProps {
   onSelect: (vessel: Vessel) => void;
   onBook: (vessel: Vessel) => void;
   isMapSelected: boolean;
+  selectedCurrency?: 'RUB' | 'USD' | 'CNY';
 }
 
 export default function VesselCard({
   vessel: rawVessel,
   onSelect,
   onBook,
-  isMapSelected
+  isMapSelected,
+  selectedCurrency = 'RUB'
 }: VesselCardProps) {
   const { lang, t } = useTranslation();
   const vessel = getLocalizedVessel(rawVessel, lang);
@@ -37,12 +40,36 @@ export default function VesselCard({
         return lang === 'ru' ? 'Гидроцикл / Спорт' : lang === 'en' ? 'Jet Ski / Sport' : '运动摩托艇';
       case 'taxi': 
         return lang === 'ru' ? 'Морское такси 24/7' : lang === 'en' ? 'Marine Taxi 24/7' : '水上出租车 24/7';
+      case 'catamaran':
+        return lang === 'ru' ? 'Парусный катамаран' : lang === 'en' ? 'Sailing Catamaran' : '双体帆船';
       default: 
         return lang === 'ru' ? 'Морское судно' : lang === 'en' ? 'Marine Vessel' : '海上船舶';
     }
   };
 
+  const getSourceBadgeStyle = (sourceType: string) => {
+    switch (sourceType) {
+      case 'farpost':
+        return { bg: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40', name: 'FarPost.ru' };
+      case 'yandex':
+        return { bg: 'bg-rose-500/20 text-rose-300 border-rose-500/40', name: 'Яндекс' };
+      case 'airbnb':
+        return { bg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40', name: 'Airbnb Lux' };
+      default:
+        return { bg: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40', name: 'JIV Direct' };
+    }
+  };
+
   const isGuestChoice = vessel.rating >= 4.9;
+  const sourceStyle = getSourceBadgeStyle(vessel.source_type);
+
+  // Price conversion
+  const displayPriceHour = vessel.priceHour
+    ? formatCurrencyPrice(convertFromRUB(vessel.priceHour, selectedCurrency), selectedCurrency, lang)
+    : null;
+  const displayPriceDay = vessel.priceDay
+    ? formatCurrencyPrice(convertFromRUB(vessel.priceDay, selectedCurrency), selectedCurrency, lang)
+    : null;
 
   return (
     <motion.div 
@@ -84,6 +111,13 @@ export default function VesselCard({
             <span className="px-2.5 py-1 text-[9px] font-mono font-bold tracking-wider uppercase rounded-md bg-slate-950/85 backdrop-blur-md text-cyan-400 border border-white/10">
               {getCategoryLabel(vessel.category)}
             </span>
+            
+            {/* Partner Data Provider Source Badge */}
+            <span className={`px-2 py-0.5 text-[9px] font-mono font-bold uppercase rounded-md border backdrop-blur-md flex items-center gap-1 ${sourceStyle.bg}`}>
+              <Globe className="w-2.5 h-2.5" />
+              <span>{sourceStyle.name}</span>
+            </span>
+
             {vessel.hasSharkRepeller && (
               <span className="px-2.5 py-1 text-[9px] font-mono font-bold tracking-wider uppercase rounded-md bg-amber-500 text-slate-950 flex items-center gap-1">
                 <ShieldCheck className="w-3 h-3 stroke-[2.5]" />
@@ -145,7 +179,7 @@ export default function VesselCard({
       {/* Core Vessel Specifications */}
       <div className="p-5 space-y-4 font-sans">
         
-        {/* Rating overview */}
+        {/* Rating & Partner Verification overview */}
         <div className="flex flex-wrap items-center justify-between gap-2 text-xs border-b border-white/5 pb-2">
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1 text-amber-400 font-bold">
@@ -157,8 +191,15 @@ export default function VesselCard({
               {vessel.reviewsCount} {lang === 'ru' ? 'отзывов' : lang === 'en' ? 'reviews' : '条评价'}
             </span>
           </div>
+
+          {vessel.partnerVerificationId && (
+            <span className="text-[9px] font-mono text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-500/30 flex items-center gap-1">
+              <CheckCircle2 className="w-2.5 h-2.5" />
+              <span>API ID: {vessel.partnerVerificationId}</span>
+            </span>
+          )}
           
-          {vessel.responseTime && (
+          {vessel.responseTime && !vessel.partnerVerificationId && (
             <span className="text-[10px] font-mono text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-500/20">
               {lang === 'ru' ? `Ответ за ${vessel.responseTime}с` : lang === 'en' ? `Responds in ${vessel.responseTime}s` : `可在 ${vessel.responseTime}秒内回复`}
             </span>
@@ -188,6 +229,31 @@ export default function VesselCard({
           </div>
         </div>
 
+        {/* Partner Showcase Banner & Deep Link */}
+        {vessel.source_type !== 'internal' && (
+          <div className="p-2.5 rounded-xl bg-slate-950/60 border border-white/10 flex items-center justify-between gap-2 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <div className="flex flex-col">
+                <span className="text-[10px] text-slate-400 font-mono">
+                  {lang === 'ru' ? 'Партнерская витрина:' : 'Partner Listing:'}
+                </span>
+                <span className="text-[11px] font-bold text-white">{vessel.source_name}</span>
+              </div>
+            </div>
+            <a
+              href={vessel.original_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-cyan-300 text-[10px] font-mono font-bold flex items-center gap-1 transition-colors"
+              title={lang === 'ru' ? 'Открыть первоисточник на партнерском сайте' : 'Open original listing'}
+            >
+              <span>{lang === 'ru' ? 'Источник' : 'Original'}</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
+        )}
+
         {/* Customized local features highlight */}
         <div className="flex flex-wrap gap-1.5">
           {vessel.features.slice(0, 3).map((feat) => (
@@ -216,14 +282,14 @@ export default function VesselCard({
           <div>
             <span className="text-[9px] text-slate-500 font-mono block">{lang === 'ru' ? 'СТОИМОСТЬ' : lang === 'en' ? 'RENTAL FEE' : '租金费用'}</span>
             <div className="flex flex-col">
-              {vessel.priceHour && (
+              {displayPriceHour && (
                 <span className="text-sm font-bold text-white font-mono">
-                  {vessel.priceHour.toLocaleString()} ₽ <span className="text-[10px] text-slate-400 font-normal">{lang === 'ru' ? '/ час' : lang === 'en' ? '/ hour' : '/ 小时'}</span>
+                  {displayPriceHour} <span className="text-[10px] text-slate-400 font-normal">{lang === 'ru' ? '/ час' : lang === 'en' ? '/ hour' : '/ 小时'}</span>
                 </span>
               )}
-              {vessel.priceDay && (
+              {displayPriceDay && (
                 <span className="text-xs text-slate-400 font-mono">
-                  {lang === 'ru' ? `или ${vessel.priceDay.toLocaleString()} ₽ / сут.` : lang === 'en' ? `or ${vessel.priceDay.toLocaleString()} RUB / day` : `或 ${vessel.priceDay.toLocaleString()} 卢布 / 天`}
+                  {lang === 'ru' ? `или ${displayPriceDay} / сут.` : lang === 'en' ? `or ${displayPriceDay} / day` : `或 ${displayPriceDay} / 天`}
                 </span>
               )}
             </div>
@@ -258,3 +324,4 @@ export default function VesselCard({
     </motion.div>
   );
 }
+
