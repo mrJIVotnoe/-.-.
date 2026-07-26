@@ -1,0 +1,371 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+/* Base custom styling & visual rhythm */
+body {
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+/* Premium smooth custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.12);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.25);
+}
+
+/* Animations */
+@keyframes dash {
+  to {
+    stroke-dashoffset: -40;
+  }
+}
+.animate-dash {
+  stroke-dasharray: 8 4;
+  animation: dash 12s linear infinite;
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.animate-spin-slow {
+  animation: spin-slow 20s linear infinite;
+}
+
+/* Global transitions for buttery theme changes */
+div, header, main, section, button, input, select, table, tr, td, span, p, h1, h2, h3, h4 {
+  transition: background-color 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
+              border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
+              color 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ==========================================
+   THEME 2: COASTAL PEARL (Premium Light Theme)
+   ========================================== */
+.theme-pearl {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+.theme-pearl #sea-waves-backdrop {
+  opacity: 0.3;
+}
+
+.theme-pearl .bg-slate-950 {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+.theme-pearl .bg-slate-900 {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.06), 0 1px 2px -1px rgba(15, 23, 42, 0.04) !important;
+}
+
+.theme-pearl .bg-slate-900\/60, 
+.theme-pearl .bg-slate-900\/40, 
+.theme-pearl .bg-slate-900\/80,
+.theme-pearl .bg-slate-950\/45,
+.theme-pearl .bg-slate-950\/90,
+.theme-pearl .bg-slate-950\/70 {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+.theme-pearl .bg-slate-950\/40 {
+  background-color: #f8fafc !important;
+}
+
+.theme-pearl .border-white\/5,
+.theme-pearl .border-white\/10,
+.theme-pearl .border-cyan-500\/20,
+.theme-pearl .border-cyan-500\/25,
+.theme-pearl .border-cyan-500\/30 {
+  border-color: #e2e8f0 !important;
+}
+
+.theme-pearl .text-slate-100 {
+  color: #1e293b !important;
+}
+
+.theme-pearl .text-slate-300,
+.theme-pearl .text-slate-400 {
+  color: #475569 !important;
+}
+
+.theme-pearl .text-slate-500 {
+  color: #64748b !important;
+}
+
+.theme-pearl .text-cyan-400,
+.theme-pearl .text-cyan-300 {
+  color: #2563eb !important; /* Royal Blue */
+}
+
+.theme-pearl .bg-cyan-500\/5,
+.theme-pearl .bg-cyan-500\/10,
+.theme-pearl .bg-cyan-500\/15 {
+  background-color: rgba(37, 99, 235, 0.08) !important;
+  color: #2563eb !important;
+}
+
+.theme-pearl .text-amber-400 {
+  color: #b45309 !important; /* Warm Amber Dark */
+}
+
+.theme-pearl .bg-amber-500\/10,
+.theme-pearl .bg-amber-500\/20 {
+  background-color: rgba(180, 83, 9, 0.08) !important;
+  color: #b45309 !important;
+}
+
+/* Gradient Buttons & Badges */
+.theme-pearl .bg-gradient-to-r.from-cyan-500.to-blue-600 {
+  background-image: linear-gradient(to right, #2563eb, #1d4ed8) !important;
+  color: #ffffff !important;
+}
+
+.theme-pearl .bg-gradient-to-br.from-cyan-400.to-blue-600 {
+  background-image: linear-gradient(to bottom right, #3b82f6, #1d4ed8) !important;
+}
+
+.theme-pearl .bg-gradient-to-r.from-cyan-950\/80.via-slate-900.to-blue-950\/80 {
+  background-image: linear-gradient(to right, #eff6ff, #f8fafc, #f0fdf4) !important;
+  border-color: #cbd5e1 !important;
+}
+
+.theme-pearl .bg-gradient-to-br.from-slate-950.via-slate-900.to-cyan-950 {
+  background-image: linear-gradient(to bottom right, #ffffff, #f8fafc, #eff6ff) !important;
+  border-color: #cbd5e1 !important;
+}
+
+.theme-pearl .text-slate-950 {
+  color: #ffffff !important;
+}
+
+.theme-pearl h1, 
+.theme-pearl h2, 
+.theme-pearl h3, 
+.theme-pearl h4, 
+.theme-pearl h5, 
+.theme-pearl h6, 
+.theme-pearl th {
+  color: #0f172a !important;
+}
+
+.theme-pearl input, 
+.theme-pearl select, 
+.theme-pearl textarea {
+  background-color: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+.theme-pearl input::placeholder {
+  color: #94a3b8 !important;
+}
+
+.theme-pearl table th {
+  background-color: #f1f5f9 !important;
+}
+
+/* ==========================================
+   THEME 3: PACIFIC SUNSET (Warm Sunset Hybrid)
+   ========================================== */
+.theme-sunset {
+  background-color: #0d0611 !important;
+  color: #f5f2f7 !important;
+}
+
+.theme-sunset #sea-waves-backdrop {
+  opacity: 0.15;
+}
+
+.theme-sunset .bg-slate-950 {
+  background-color: #0d0611 !important;
+  color: #f5f2f7 !important;
+}
+
+.theme-sunset .bg-slate-900 {
+  background-color: #170d1e !important;
+  color: #f5f2f7 !important;
+}
+
+.theme-sunset .bg-slate-900\/60, 
+.theme-sunset .bg-slate-900\/40, 
+.theme-sunset .bg-slate-900\/80,
+.theme-sunset .bg-slate-950\/45,
+.theme-sunset .bg-slate-950\/90,
+.theme-sunset .bg-slate-950\/70 {
+  background-color: #1c1126 !important;
+  color: #f5f2f7 !important;
+}
+
+.theme-sunset .bg-slate-950\/40 {
+  background-color: #0d0611 !important;
+}
+
+.theme-sunset .border-white\/5,
+.theme-sunset .border-white\/10,
+.theme-sunset .border-cyan-500\/20,
+.theme-sunset .border-cyan-500\/25,
+.theme-sunset .border-cyan-500\/30 {
+  border-color: rgba(244, 63, 94, 0.15) !important; /* Rose border */
+}
+
+.theme-sunset .text-slate-100 {
+  color: #f5f2f7 !important;
+}
+
+.theme-sunset .text-slate-300,
+.theme-sunset .text-slate-400 {
+  color: #cbc3d0 !important;
+}
+
+.theme-sunset .text-slate-500 {
+  color: #8c7f93 !important;
+}
+
+.theme-sunset .text-cyan-400,
+.theme-sunset .text-cyan-300 {
+  color: #fb7185 !important; /* Sunset Pink/Rose */
+}
+
+.theme-sunset .bg-cyan-500\/5,
+.theme-sunset .bg-cyan-500\/10,
+.theme-sunset .bg-cyan-500\/15 {
+  background-color: rgba(251, 113, 133, 0.1) !important;
+  color: #fb7185 !important;
+}
+
+.theme-sunset .text-amber-400 {
+  color: #fbbf24 !important; /* Warm Sun Amber */
+}
+
+.theme-sunset .bg-amber-500\/10,
+.theme-sunset .bg-amber-500\/20 {
+  background-color: rgba(251, 191, 36, 0.1) !important;
+  color: #fbbf24 !important;
+}
+
+/* Gradient Buttons & Badges */
+.theme-sunset .bg-gradient-to-r.from-cyan-500.to-blue-600 {
+  background-image: linear-gradient(to right, #f59e0b, #ec4899) !important; /* Orange to Pink */
+  color: #0d0611 !important;
+}
+
+.theme-sunset .bg-gradient-to-br.from-cyan-400.to-blue-600 {
+  background-image: linear-gradient(to bottom right, #f59e0b, #ec4899) !important;
+}
+
+.theme-sunset .bg-gradient-to-r.from-cyan-950\/80.via-slate-900.to-blue-950\/80 {
+  background-image: linear-gradient(to right, #251230, #1c1126, #301121) !important;
+  border-color: rgba(244, 63, 94, 0.2) !important;
+}
+
+.theme-sunset .bg-gradient-to-br.from-slate-950.via-slate-900.to-cyan-950 {
+  background-image: linear-gradient(to bottom right, #170d1e, #1c1126, #2a0e1c) !important;
+  border-color: rgba(244, 63, 94, 0.25) !important;
+}
+
+.theme-sunset h1, 
+.theme-sunset h2, 
+.theme-sunset h3, 
+.theme-sunset h4, 
+.theme-sunset h5, 
+.theme-sunset h6, 
+.theme-sunset th {
+  color: #ffffff !important;
+}
+
+.theme-sunset input, 
+.theme-sunset select, 
+.theme-sunset textarea {
+  background-color: #0d0611 !important;
+  border-color: rgba(244, 63, 94, 0.2) !important;
+  color: #ffffff !important;
+}
+
+.theme-sunset input::placeholder {
+  color: #8c7f93 !important;
+}
+
+/* ==========================================
+   GEOGRAPHICAL RADAR & VECTOR MAP OVERRIDES
+   ========================================== */
+.map-land {
+  fill: rgba(15, 23, 42, 0.45);
+  stroke: rgba(34, 211, 238, 0.3);
+  stroke-width: 0.5;
+  transition: fill 0.6s cubic-bezier(0.16, 1, 0.3, 1), stroke 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.theme-pearl .map-land {
+  fill: rgba(226, 232, 240, 0.75) !important;
+  stroke: rgba(37, 99, 235, 0.4) !important;
+}
+.theme-sunset .map-land {
+  fill: rgba(43, 16, 54, 0.55) !important;
+  stroke: rgba(251, 113, 133, 0.45) !important;
+}
+
+.map-isobath {
+  fill: none;
+  stroke: rgba(34, 211, 238, 0.08);
+  stroke-width: 0.3;
+  stroke-dasharray: 2 4;
+}
+.theme-pearl .map-isobath {
+  stroke: rgba(37, 99, 235, 0.08) !important;
+}
+.theme-sunset .map-isobath {
+  stroke: rgba(251, 113, 133, 0.12) !important;
+}
+
+.map-bridge {
+  stroke: rgba(239, 68, 68, 0.4);
+}
+.theme-pearl .map-bridge {
+  stroke: rgba(220, 38, 38, 0.5) !important;
+}
+.theme-sunset .map-bridge {
+  stroke: rgba(244, 63, 94, 0.65) !important;
+}
+
+.map-text-primary {
+  fill: rgba(255, 255, 255, 0.35);
+}
+.theme-pearl .map-text-primary {
+  fill: rgba(15, 23, 42, 0.5) !important;
+}
+.theme-sunset .map-text-primary {
+  fill: rgba(255, 255, 255, 0.4) !important;
+}
+
+.map-text-secondary {
+  fill: rgba(34, 211, 238, 0.25);
+}
+.theme-pearl .map-text-secondary {
+  fill: rgba(37, 99, 235, 0.35) !important;
+}
+.theme-sunset .map-text-secondary {
+  fill: rgba(251, 113, 133, 0.3) !important;
+}
+

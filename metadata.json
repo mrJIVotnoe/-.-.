@@ -1,0 +1,6 @@
+{
+  "name": "Journey In Vladivostok (JIV)",
+  "description": "Интерактивный маркетплейс аренды яхт, катеров и гидроциклов во Владивостоке под брендом JIV с поддержкой радар-карты, погодного слоя и умного цифрового капитана.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
