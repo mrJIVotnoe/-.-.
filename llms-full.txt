@@ -1,0 +1,84 @@
+# JIV — Journey In Vladivostok Full Context Dump
+> Complete technical context, code schemas, and Data Adapter architecture definitions for LLM parsing.
+
+## 1. Project Overview
+- Name: Journey In Vladivostok (JIV)
+- Stack: React 19, TypeScript, Vite, Express.js, Tailwind CSS v4, Motion, Lucide React, Google GenAI SDK.
+- Primary Port: 3000 (0.0.0.0)
+
+## 2. Global Bridge Data Adapters Architecture
+The project abstracts vessel listings behind `IVesselDataProvider`:
+
+```typescript
+export interface IVesselDataProvider {
+  readonly providerId: VesselSourceType; // 'internal' | 'farpost' | 'yandex' | 'airbnb'
+  readonly providerName: string;
+  readonly sourceUrl: string;
+  getVessels(filters?: VesselFilterOptions): Promise<Vessel[]>;
+  getVesselById(id: string): Promise<Vessel | null>;
+}
+```
+
+Registered Adapters:
+1. `LocalDBProvider`: JIV Direct Fleet Registry (`src/lib/providers/LocalDBProvider.ts`).
+2. `FarPostAdapter`: FarPost.ru Marine Feed (`src/lib/providers/FarPostAdapter.ts`).
+3. `YandexTravelAdapter`: Yandex Travel & Yandex Go Sea Taxi (`src/lib/providers/YandexTravelAdapter.ts`).
+4. `AirbnbLuxAdapter`: Airbnb Luxe Marine Charters (`src/lib/providers/AirbnbLuxAdapter.ts`).
+
+Aggregated via `AggregateVesselProvider` (`globalVesselAggregator`).
+
+## 3. Core Data Schemas (`src/types.ts`)
+
+```typescript
+export type VesselCategory = 'yacht' | 'boat' | 'jetski' | 'taxi' | 'catamaran';
+export type VesselSourceType = 'internal' | 'farpost' | 'yandex' | 'airbnb';
+export type SupportedCurrency = 'RUB' | 'USD' | 'CNY';
+
+export interface Vessel {
+  id: string;
+  source_type: VesselSourceType;
+  source_name: string;
+  original_url: string;
+  vessel_type: VesselCategory;
+  geo_coordinates: { lat: number; lng: number };
+  
+  name: string;
+  category: VesselCategory;
+  description: string;
+  capacity: number;
+  speed: number;
+  homeport: string;
+  coordinates: { x: number; y: number };
+  latLon: [number, number];
+  priceHour?: number;
+  priceDay?: number;
+  currency?: SupportedCurrency;
+  rating: number;
+  reviewsCount: number;
+  captainName: string;
+  captainPhone: string;
+  images: string[];
+  features: string[];
+  hasSharkRepeller?: boolean;
+  hasEchoSounder?: boolean;
+  allowedActivities?: string[];
+  isLive?: boolean;
+  responseTime?: number;
+  partnerVerificationId?: string;
+}
+```
+
+## 4. Multi-Region Realization Markets (`src/lib/regionConfig.ts`)
+1. `ru-vladivostok`: Yandex Maps, NSPK/Mir, SBP, T-Pay, RUB currency.
+2. `asia-hub`: Baidu Maps, WeChat Pay, Alipay, UnionPay, CNY currency.
+3. `global-marina`: OpenSeaMap, Stripe, Apple Pay, PayPal, USD currency.
+
+## 5. REST API Specification (`server.ts`)
+- `GET /api/health`
+- `GET /api/vessels?category=&source=&capacity=&maxPrice=&search=`
+- `GET /api/vessels/:id`
+- `GET /api/tours`
+- `GET /api/rates`
+- `GET /api/regions`
+- `GET /api/openapi.json`
+- `GET /api/docs`

@@ -1,0 +1,24 @@
+# JIV — Journey In Vladivostok Marine Fleet Platform
+> Interactive Vessel Rental Marketplace, Data Provider Aggregator & AI Digital Captain for Vladivostok Waters.
+
+JIV is a full-stack maritime platform running React 19, Express.js, TypeScript, and Google Gemini AI. It implements a Global Bridge Data Adapter architecture to aggregate local and partner fleet listings (FarPost.ru, Yandex Travel, Airbnb Luxe Marine).
+
+## Core Documentation
+- [AGENTS.md](AGENTS.md): Full AI Agent context, directory tree, Data Provider interfaces, and coding rules.
+- [GEMINI.md](GEMINI.md): Gemini AI integration guidelines for Digital Captain navigation module.
+- [README.md](README.md): Public user documentation, setup instructions, Mermaid architecture diagrams, and API guides.
+
+## REST API Endpoints
+- [OpenAPI 3.0 Specification](http://localhost:3000/api/openapi.json): Machine-readable API schema.
+- [Interactive Swagger UI](http://localhost:3000/api/docs): Human and LLM interactive API explorer.
+- [GET /api/vessels](http://localhost:3000/api/vessels): Query normalized vessels from all Data Adapters.
+- [GET /api/tours](http://localhost:3000/api/tours): Excursions and group sea tours in Vladivostok.
+- [GET /api/rates](http://localhost:3000/api/rates): Multi-currency exchange rates (RUB, USD, CNY).
+- [GET /api/regions](http://localhost:3000/api/regions): Regional realization market profiles (RU, Asia, Global).
+
+## Key Code Modules
+- [Data Providers Layer](src/lib/providers/types.ts): Abstract `IVesselDataProvider` interface & filter options.
+- [Data Aggregator](src/lib/providers/AggregateVesselProvider.ts): Parallel provider coordinator (`globalVesselAggregator`).
+- [Multi-Currency Engine](src/lib/currency.ts): Conversion and localized formatting for RUB, USD, CNY.
+- [Regional Markets](src/lib/regionConfig.ts): Market profiles and payment gateway definitions (NSPK/Mir, WeChat Pay, Stripe).
+- [TypeScript Types](src/types.ts): Core domain interfaces (`Vessel`, `VesselCategory`, `VesselSourceType`, `SupportedCurrency`).
