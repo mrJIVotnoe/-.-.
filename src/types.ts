@@ -3,18 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export type VesselCategory = 'yacht' | 'boat' | 'jetski' | 'taxi' | 'catamaran';
-export type VesselSourceType = 'internal' | 'farpost' | 'yandex' | 'airbnb';
-export type SupportedCurrency = 'RUB' | 'USD' | 'CNY';
+export type VesselCategory = 'yacht' | 'boat' | 'jetski' | 'taxi';
 
 export interface Vessel {
   id: string;
-  source_type: VesselSourceType;
-  source_name: string; // e.g. "FarPost Морской Транспорт", "Яндекс Путешествия", "Airbnb Luxe Marina", "JIV Флот"
-  original_url: string; // Deep link URL to primary source
-  vessel_type: VesselCategory;
-  geo_coordinates: { lat: number; lng: number }; // Standarized geo-coordinates object
-  
   name: string;
   category: VesselCategory;
   description: string;
@@ -25,7 +17,6 @@ export interface Vessel {
   latLon: [number, number]; // Actual coordinates for navigation
   priceHour?: number;
   priceDay?: number;
-  currency?: SupportedCurrency; // Base currency for original prices (default: RUB)
   rating: number;
   reviewsCount: number;
   captainName: string;
@@ -41,7 +32,6 @@ export interface Vessel {
   responseTime?: number; // Average response speed in seconds
   isTopPromoted?: boolean; // Promoted in TOP-1 search
   promoBadge?: string; // e.g. "🔥 VIP TOP-1"
-  partnerVerificationId?: string; // Verification code from partner API
 }
 
 export interface AdCampaign {

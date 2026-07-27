@@ -114,12 +114,6 @@ export default function CaptainsBridge({ vessels, setVessels, bookings, setBooki
 
     const newVesselObj: Vessel = {
       id: `vessel-${Date.now()}`,
-      source_type: 'internal',
-      source_name: 'JIV Капитанский Реестр',
-      original_url: '#captain-direct-listing',
-      vessel_type: newVesselCategory as any,
-      geo_coordinates: { lat: 43.05, lng: 131.85 },
-      currency: 'RUB',
       name: newVesselName,
       category: newVesselCategory,
       description: `Новое судно капитана ${newVesselCaptainName}, базирование: ${newVesselHomeport}. Профессиональное оборудование, теплая каюта и высочайший уровень безопасности.`,

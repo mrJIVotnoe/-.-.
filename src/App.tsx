@@ -4,11 +4,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Vessel, SharedTour, WeatherCondition, Booking, AdCampaign, VesselSourceType, SupportedCurrency } from './types';
+import { Vessel, SharedTour, WeatherCondition, Booking, AdCampaign } from './types';
 import { VESSELS_DATA } from './data/vessels';
-import { globalVesselAggregator } from './lib/providers/AggregateVesselProvider';
-import { MARKET_REGION_PROFILES, getInitialMarketRegion, MarketRegionId } from './lib/regionConfig';
-import { convertCurrency, formatCurrencyPrice } from './lib/currency';
 import WeatherWidget from './components/WeatherWidget';
 import InteractiveSeaMap from './components/InteractiveSeaMap';
 import VesselCard from './components/VesselCard';
@@ -127,38 +124,8 @@ function AppContent() {
     setTheme(selectedTheme);
   };
 
-  // --- Global Bridge Data Adapters & Regional State ---
-  const [selectedSourceType, setSelectedSourceType] = useState<VesselSourceType | 'all'>('all');
-  const [selectedCurrency, setSelectedCurrency] = useState<SupportedCurrency>('RUB');
-  const [marketRegion, setMarketRegion] = useState<MarketRegionId>(getInitialMarketRegion);
-
+  // --- Data & Filters State ---
   const [vessels, setVessels] = useState<Vessel[]>(VESSELS_DATA);
-
-  // Fetch vessels asynchronously from Data Providers (LocalDB, FarPost, Yandex, Airbnb)
-  useEffect(() => {
-    let isMounted = true;
-    const fetchAdapterData = async () => {
-      const data = await globalVesselAggregator.getAllVessels({
-        sourceType: selectedSourceType
-      });
-      if (isMounted) {
-        setVessels(data);
-      }
-    };
-    fetchAdapterData();
-    return () => {
-      isMounted = false;
-    };
-  }, [selectedSourceType]);
-
-  // Handle Market Region Switch
-  const handleMarketRegionChange = (newRegion: MarketRegionId) => {
-    setMarketRegion(newRegion);
-    localStorage.setItem('jiv_market_region', newRegion);
-    const profile = MARKET_REGION_PROFILES[newRegion];
-    setSelectedCurrency(profile.defaultCurrency);
-    setLang(profile.defaultLanguage);
-  };
   
   // --- Global Bookings Queue state (airbnb/farfar style) ---
   const [bookings, setBookings] = useState<Booking[]>(() => {
@@ -831,82 +798,6 @@ function AppContent() {
                     </div>
                   </div>
 
-                  {/* Data Provider / Adapter Source Selector (Global Bridge requirement) */}
-                  <div className="space-y-1.5 pt-2 border-t border-white/5">
-                    <label className="text-[10px] uppercase font-mono tracking-wider text-slate-400 flex items-center justify-between">
-                      <span>{lang === 'ru' ? 'Источник данных (Data Adapter)' : 'Data Adapter Source'}</span>
-                      <span className="text-cyan-400 font-bold">API v1</span>
-                    </label>
-                    <div className="grid grid-cols-2 gap-2" id="provider-source-grid">
-                      {[
-                        { id: 'all', label: 'Все источники', badge: 'Все' },
-                        { id: 'internal', label: 'JIV Реестр', badge: 'Direct' },
-                        { id: 'farpost', label: 'FarPost.ru', badge: 'API' },
-                        { id: 'yandex', label: 'Яндекс.Путешествия', badge: 'Yandex' },
-                        { id: 'airbnb', label: 'Airbnb Lux', badge: 'Global' }
-                      ].map((src) => (
-                        <button
-                          key={src.id}
-                          onClick={() => setSelectedSourceType(src.id as any)}
-                          id={`src-filter-btn-${src.id}`}
-                          className={`px-2.5 py-1.5 text-left rounded-xl text-xs font-semibold border transition-all flex items-center justify-between ${
-                            selectedSourceType === src.id
-                              ? 'bg-gradient-to-r from-cyan-950/60 to-slate-900 text-cyan-300 border-cyan-500/50 shadow-md'
-                              : 'bg-slate-900/30 border-white/5 text-slate-400 hover:text-white hover:border-white/10'
-                          }`}
-                        >
-                          <span className="truncate">{src.label}</span>
-                          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-950 text-cyan-400 border border-cyan-500/20">
-                            {src.badge}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Regional Market & Currency Selector */}
-                  <div className="space-y-1.5 pt-2 border-t border-white/5">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[10px] uppercase font-mono tracking-wider text-slate-400">
-                        {lang === 'ru' ? 'Регион & Валюта' : 'Region & Currency'}
-                      </label>
-                      <div className="flex gap-1">
-                        {(['RUB', 'USD', 'CNY'] as SupportedCurrency[]).map((cur) => (
-                          <button
-                            key={cur}
-                            onClick={() => setSelectedCurrency(cur)}
-                            className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all ${
-                              selectedCurrency === cur
-                                ? 'bg-amber-500 text-slate-950'
-                                : 'bg-slate-900 text-slate-400 hover:text-white'
-                            }`}
-                          >
-                            {cur}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-1.5" id="region-market-profile-grid">
-                      {Object.values(MARKET_REGION_PROFILES).map((prof) => (
-                        <button
-                          key={prof.id}
-                          onClick={() => handleMarketRegionChange(prof.id)}
-                          className={`p-2 rounded-xl text-center border transition-all flex flex-col items-center gap-1 ${
-                            marketRegion === prof.id
-                              ? 'bg-gradient-to-b from-cyan-950 to-slate-900 border-cyan-400 text-white shadow-lg'
-                              : 'bg-slate-900/30 border-white/5 text-slate-400 hover:text-slate-200'
-                          }`}
-                        >
-                          <span className="text-base">{prof.flag}</span>
-                          <span className="text-[9px] font-bold font-mono leading-tight">
-                            {lang === 'ru' ? prof.nameRu : prof.nameEn}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
                   {/* Location harbor selector */}
                   <div className="space-y-1.5">
                     <label className="text-[10px] uppercase font-mono tracking-wider text-slate-400 block">
@@ -1300,7 +1191,6 @@ function AppContent() {
                         }}
                         onBook={(vs) => setBookingVessel(vs)}
                         isMapSelected={selectedVesselForMap?.id === vessel.id}
-                        selectedCurrency={selectedCurrency}
                       />
                     ))}
                   </div>
