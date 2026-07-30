@@ -26,6 +26,7 @@ import MapToolsPanel from './components/MapToolsPanel';
 import SelfHostingModal from './components/SelfHostingModal';
 import TelegramHubModal from './components/TelegramHubModal';
 import WeChatHubModal from './components/WeChatHubModal';
+import AndroidHubModal from './components/AndroidHubModal';
 import { initTelegramEnvironment } from './lib/telegramSDK';
 import { initWeChatEnvironment } from './lib/wechatSDK';
 import { LanguageProvider, useTranslation, Language } from './lib/translations';
@@ -66,6 +67,7 @@ import {
   Server,
   Send,
   MessageSquare,
+  Smartphone,
   Maximize2
 } from 'lucide-react';
 
@@ -288,12 +290,13 @@ function AppContent() {
   const [customRoutePoints, setCustomRoutePoints] = useState<[number, number][]>([]);
   const [customPickupPoint, setCustomPickupPoint] = useState<{ latLon: [number, number]; type: 'pickup' | 'evac' } | null>(null);
 
-  // Top Tray Modals state for Hydromet Center, Radar, Self-Hosting, Telegram & WeChat
+  // Top Tray Modals state for Hydromet Center, Radar, Self-Hosting, Telegram, WeChat & Android PWA
   const [isHydrometModalOpen, setIsHydrometModalOpen] = useState<boolean>(false);
   const [isRadarModalOpen, setIsRadarModalOpen] = useState<boolean>(false);
   const [isSelfHostingModalOpen, setIsSelfHostingModalOpen] = useState<boolean>(false);
   const [isTelegramModalOpen, setIsTelegramModalOpen] = useState<boolean>(false);
   const [isWeChatModalOpen, setIsWeChatModalOpen] = useState<boolean>(false);
+  const [isAndroidModalOpen, setIsAndroidModalOpen] = useState<boolean>(false);
 
   // Initialize Telegram & WeChat WebApp SDKs
   useEffect(() => {
@@ -703,6 +706,22 @@ function AppContent() {
               </span>
               <span className="text-[10px] px-1.5 py-0.5 bg-emerald-400/20 text-emerald-300 rounded-md font-bold uppercase">
                 微信
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsAndroidModalOpen(true)}
+              id="nav-tray-btn-android"
+              className="px-3 py-1.5 sm:py-2 rounded-xl text-xs font-semibold tracking-wide transition-all flex items-center gap-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0 shadow-md group hover:scale-105 font-mono"
+              title={lang === 'ru' ? 'Android APK / AAB & PWABuilder Hub' : 'Android APK & PWABuilder Hub'}
+            >
+              <Smartphone className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span>
+                Android App
+              </span>
+              <span className="text-[10px] px-1.5 py-0.5 bg-amber-400/20 text-amber-300 rounded-md font-bold uppercase">
+                APK/AAB
               </span>
             </button>
 
@@ -1835,6 +1854,13 @@ function AppContent() {
         lang={lang}
       />
 
+      {/* 6. Android PWA & PWABuilder Control Hub Modal */}
+      <AndroidHubModal
+        isOpen={isAndroidModalOpen}
+        onClose={() => setIsAndroidModalOpen(false)}
+        lang={lang}
+      />
+
       {/* Decorative Elegant Footer with subtle brand mentions */}
       <footer className="relative z-10 border-t border-white/5 bg-slate-950/80 py-8 text-center text-xs text-slate-500 space-y-2" id="main-app-footer">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4">
@@ -1843,6 +1869,13 @@ function AppContent() {
             <span className="font-mono text-slate-400">ФАРВАТЕР © 2026 — Акватория Владивостока</span>
           </div>
           <div className="flex items-center gap-4 text-[11px]">
+            <button
+              onClick={() => setIsAndroidModalOpen(true)}
+              className="text-amber-400/90 hover:text-amber-300 transition-colors font-mono flex items-center gap-1 underline underline-offset-2"
+            >
+              <Smartphone className="w-3 h-3 text-amber-400" />
+              <span>Android App (PWABuilder)</span>
+            </button>
             <button
               onClick={() => setIsTelegramModalOpen(true)}
               className="text-sky-400/90 hover:text-sky-300 transition-colors font-mono flex items-center gap-1 underline underline-offset-2"

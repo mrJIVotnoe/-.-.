@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.jivfleet.vladivostok",
+      "sha256_cert_fingerprints": [
+        "14:6D:E9:8E:B5:7F:C2:01:21:2B:65:0F:78:E2:BB:D2:90:35:86 text_sha256_placeholder_for_pwabuilder_key"
+      ]
+    }
+  }
+]

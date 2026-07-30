@@ -90,7 +90,30 @@ app.get('/api/v1/export-data', (req, res) => {
 });
 
 // ========================================================
-// 3. Telegram Bot & Mini App Integration Endpoints
+// 3. Digital Asset Links & Android PWA Endpoints
+// ========================================================
+
+// Explicit handler for /.well-known/assetlinks.json required for Android TWA
+app.get('/.well-known/assetlinks.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.sendFile(path.join(__dirname, 'public', '.well-known', 'assetlinks.json'));
+});
+
+// Android PWA configuration status endpoint
+app.get('/api/android/config', (req, res) => {
+  res.json({
+    status: 'ok',
+    packageName: 'com.jivfleet.vladivostok',
+    appName: 'ФАРВАТЕР JIV Fleet Vladivostok',
+    pwaManifestUrl: '/manifest.json',
+    assetLinksUrl: '/.well-known/assetlinks.json',
+    pwaBuilderReady: true,
+    twaSupported: true
+  });
+});
+
+// ========================================================
+// 4. Telegram Bot & Mini App Integration Endpoints
 // ========================================================
 
 // 3a. Telegram Bot Config & Status

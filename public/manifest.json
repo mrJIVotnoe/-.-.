@@ -1,0 +1,66 @@
+{
+  "name": "ФАРВАТЕР JIV Fleet Vladivostok",
+  "short_name": "ФАРВАТЕР",
+  "description": "Экосистема бронирования катеров, яхт, морского такси и рейдовой эвакуации в Заливе Петра Великого (Владивосток)",
+  "start_url": "/?source=pwa_android",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#020617",
+  "orientation": "portrait-primary",
+  "lang": "ru",
+  "dir": "ltr",
+  "scope": "/",
+  "id": "com.jivfleet.vladivostok.pwa",
+  "categories": ["navigation", "travel", "lifestyle"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Каталог Яхт",
+      "short_name": "Яхты",
+      "description": "Прямая бронь катеров и яхт без комиссии",
+      "url": "/?section=rent&source=shortcut",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Морское Такси & SOS",
+      "short_name": "Такси SOS",
+      "description": "Рейдовая эвакуация МЧС и доставка на острова",
+      "url": "/?section=shared&source=shortcut",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Гидрометеоцентр",
+      "short_name": "Погода",
+      "description": "Радары ветра и волн во Владивостоке",
+      "url": "/?modal=hydromet&source=shortcut",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "related_applications": [
+    {
+      "platform": "play",
+      "url": "https://play.google.com/store/apps/details?id=com.jivfleet.vladivostok",
+      "id": "com.jivfleet.vladivostok"
+    }
+  ],
+  "prefer_related_applications": false
+}
