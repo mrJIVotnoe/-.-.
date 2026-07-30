@@ -1,0 +1,4 @@
+<!-- JIV Fleet Vladivostok WeChat Mini App Webview Page -->
+<view class="container">
+  <web-view src="{{ webviewUrl }}" bindmessage="onWebviewMessage"></web-view>
+</view>

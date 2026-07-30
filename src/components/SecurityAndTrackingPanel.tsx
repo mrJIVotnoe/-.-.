@@ -16,6 +16,7 @@ import {
   Navigation, 
   Radio, 
   AlertTriangle, 
+  AlertCircle,
   CheckCircle, 
   ExternalLink,
   ChevronRight,
@@ -1023,386 +1024,145 @@ ${trkpts}
         {/* CAPTAIN BRANCH */}
         {authRole === 'captain' && (
           <div className="space-y-6" id="captain-panel-flow">
-            {!captainVerified ? (
-              <div className="bg-slate-900/60 p-4 rounded-xl border border-white/5 space-y-4" id="captain-verification-wizard">
-                  <div className="flex items-center justify-between border-b border-white/5 pb-2">
-                    <span className="text-xs font-bold text-white uppercase font-mono tracking-wider">
-                      {projectLine === 'ru' && `Регистрация Капитана • Шаг ${captainStep} из 5`}
-                      {projectLine === 'cn' && `船长资质审核 • 第 ${captainStep} / 5 步`}
-                      {projectLine === 'intl' && `Captain Onboarding • Step ${captainStep} of 5`}
-                    </span>
-                    <span className="text-[9px] text-amber-400 font-mono flex items-center gap-1">
-                      <Radio className="w-3 h-3 text-amber-400 animate-pulse" />
-                      {projectLine === 'ru' && 'Yandex.Pro Верификация'}
-                      {projectLine === 'cn' && 'WeChat 联运身份核验'}
-                      {projectLine === 'intl' && 'Google Workspace ID Validation'}
-                    </span>
-                  </div>
-
-                  {captainStep === 1 && (
-                    <div className="space-y-3">
-                      <span className="text-xs font-bold text-cyan-400 block">
-                        {projectLine === 'ru' ? '1. Личные данные и Паспорт' : projectLine === 'cn' ? '1. 个人身份证件核实' : '1. Personal ID Verification'}
-                      </span>
-                      <p className="text-[11px] text-slate-400">
-                        {projectLine === 'ru' && 'Введите ФИО и паспортные данные гражданина РФ для проверки через Государственные системы ЕСИА.'}
-                        {projectLine === 'cn' && '请输入您的姓名及中华人民共和国居民身份证/护照号，以通过边防港务电子核查系统。'}
-                        {projectLine === 'intl' && 'Please input your full legal name and passport ID for verification with Maritime Safety agencies.'}
-                      </p>
-                      
-                      <div className="space-y-2">
-                        <input
-                          type="text"
-                          placeholder={projectLine === 'ru' ? 'ФИО Капитана (как в паспорте)' : projectLine === 'cn' ? '您的真实姓名' : 'Full legal name'}
-                          value={captainDocs.fullName}
-                          onChange={(e) => setCaptainDocs({...captainDocs, fullName: e.target.value})}
-                          className="w-full bg-slate-950 border border-white/5 rounded-lg px-3 py-2 text-xs text-white"
-                        />
-                        <div className="grid grid-cols-2 gap-2">
-                          <input
-                            type="text"
-                            placeholder={projectLine === 'ru' ? 'Серия и Номер Паспорта' : projectLine === 'cn' ? '身份证/护照号码' : 'Passport / ID Number'}
-                            value={captainDocs.passportNum}
-                            onChange={(e) => setCaptainDocs({...captainDocs, passportNum: e.target.value})}
-                            className="bg-slate-950 border border-white/5 rounded-lg px-3 py-2 text-xs text-white font-mono"
-                          />
-                          <input
-                            type="text"
-                            placeholder={projectLine === 'ru' ? 'ИНН или СНИЛС' : projectLine === 'cn' ? '社会统一信用代码/其他' : 'Tax ID or SSN'}
-                            className="bg-slate-950 border border-white/5 rounded-lg px-3 py-2 text-xs text-white font-mono"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="p-2 rounded bg-slate-950 text-[10px] text-slate-500 font-mono">
-                        {projectLine === 'ru' && '🔒 Данные шифруются по стандарту ГОСТ Р 34.12 и защищены ФЗ-152 о персональных данных.'}
-                        {projectLine === 'cn' && '🔒 信息采用符合《个人信息保护法》(PIPL) 加密标准传输，完全保密。'}
-                        {projectLine === 'intl' && '🔒 Data encrypted via TLS 1.3 standards, fully compliant with EU GDPR and CCPA guidelines.'}
-                      </div>
-                    </div>
-                  )}
-
-                  {captainStep === 2 && (
-                    <div className="space-y-3">
-                      <span className="text-xs font-bold text-cyan-400 block">
-                        {projectLine === 'ru' ? '2. Удостоверение ГИМС (Лицензия)' : projectLine === 'cn' ? '2. 船长执照 (MSA 资质证书)' : '2. Captain License (IMO / USCG / MCA)'}
-                      </span>
-                      <p className="text-[11px] text-slate-400">
-                        {projectLine === 'ru' && 'Прикрепите фото прав маломерного судна. Срок действия прав ГИМС в РФ составляет 10 лет.'}
-                        {projectLine === 'cn' && '请上传您的海事局小船驾驶执照或适任证书。GIMS/MSA 资质审核。'}
-                        {projectLine === 'intl' && 'Please upload your maritime vessel skipper certification or international master pilot license.'}
-                      </p>
-
-                      <div className="space-y-2">
-                        <input
-                          type="text"
-                          placeholder={
-                            projectLine === 'ru' ? 'Номер удостоверения ГИМС МЧС РФ' :
-                            projectLine === 'cn' ? '海事局适任证书编号' :
-                            'USCG / MCA / IMO License Number'
-                          }
-                          value={captainDocs.gimsLicense}
-                          onChange={(e) => setCaptainDocs({...captainDocs, gimsLicense: e.target.value})}
-                          className="w-full bg-slate-950 border border-white/5 rounded-lg px-3 py-2 text-xs text-white font-mono"
-                        />
-                        
-                        <div className="flex items-center gap-3">
-                          <label className={`flex-1 py-2 rounded-lg border text-xs font-mono transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                            captainDocs.uploadedGims ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-slate-950 border-dashed border-white/10 text-slate-400 hover:text-white'
-                          }`}>
-                            <Upload className="w-3.5 h-3.5" />
-                            <span>
-                              {captainDocs.uploadedGims 
-                                ? (projectLine === 'cn' ? '✓ 上传成功' : '✓ Загружено') 
-                                : (projectLine === 'cn' ? '上传证书扫描件' : projectLine === 'intl' ? 'Upload license image' : 'Загрузить фото прав')
-                              }
-                            </span>
-                            <input
-                              type="file"
-                              accept="image/*,.pdf"
-                              className="hidden"
-                              onChange={(e) => {
-                                if (e.target.files?.[0]) {
-                                  setCaptainDocs({...captainDocs, uploadedGims: true});
-                                  triggerToast(
-                                    projectLine === 'ru' ? '📁 Скан-копия удостоверения ГИМС успешно загружена.' :
-                                    projectLine === 'cn' ? '📁 海事局船长执照扫描件已成功上传。' :
-                                    '📁 Captain Yachtmaster license scanned and verified.'
-                                  );
-                                }
-                              }}
-                            />
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {captainStep === 3 && (
-                    <div className="space-y-3">
-                      <span className="text-xs font-bold text-cyan-400 block">
-                        {projectLine === 'ru' ? '3. Судовой билет и Судно' : projectLine === 'cn' ? '3. 船舶国籍证书 / 船契' : '3. Vessel Registry & Hull ID'}
-                      </span>
-                      <p className="text-[11px] text-slate-400">
-                        {projectLine === 'ru' && 'Каждое судно должно иметь государственный регистрационный номер РФ. Введите номер и загрузите судовой билет.'}
-                        {projectLine === 'cn' && '所有运营船只必须具备合法的船只登记号，并在有效期内。请输入编号并上传船舶登记证书照片。'}
-                        {projectLine === 'intl' && 'Each yacht must hold an official registry and dynamic Hull Identification Number (HIN).'}
-                      </p>
-
-                      <div className="space-y-2">
-                        <input
-                          type="text"
-                          placeholder={
-                            projectLine === 'ru' ? 'Бортовой номер (например, Р 12-34 ВЛ)' :
-                            projectLine === 'cn' ? '船身侧号/登记号 (如: 粤番 12345)' :
-                            'Vessel Registration ID (e.g. US-HIN-12345)'
-                          }
-                          value={captainDocs.boatRegNum}
-                          onChange={(e) => setCaptainDocs({...captainDocs, boatRegNum: e.target.value})}
-                          className="w-full bg-slate-950 border border-white/5 rounded-lg px-3 py-2 text-xs text-white font-mono"
-                        />
-
-                        <label className={`w-full py-2 rounded-lg border text-xs font-mono transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                          captainDocs.uploadedTicket ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-slate-950 border-dashed border-white/10 text-slate-400 hover:text-white'
-                        }`}>
-                          <Upload className="w-3.5 h-3.5" />
-                          <span>
-                            {captainDocs.uploadedTicket 
-                              ? (projectLine === 'cn' ? '✓ 船舶证书已导入' : '✓ Билет загружен') 
-                              : (projectLine === 'cn' ? '上传船舶证书照片' : projectLine === 'intl' ? 'Upload registration copy' : 'Загрузить судовой билет')
-                            }
-                          </span>
-                          <input
-                            type="file"
-                            accept="image/*,.pdf"
-                            className="hidden"
-                            onChange={(e) => {
-                              if (e.target.files?.[0]) {
-                                setCaptainDocs({...captainDocs, uploadedTicket: true});
-                                triggerToast(
-                                  projectLine === 'ru' ? '📁 Судовой билет МЧС загружен в базу.' :
-                                  projectLine === 'cn' ? '📁 船舶登记证书已保存至港口数据库。' :
-                                  '📁 Maritime vessel registration certificate logged and secured.'
-                                );
-                              }
-                            }}
-                          />
-                        </label>
-                      </div>
-                    </div>
-                  )}
-
-                  {captainStep === 4 && (
-                    <div className="space-y-3">
-                      <span className="text-xs font-bold text-cyan-400 block">
-                        {lang === 'ru' ? '4. Обязательный фотоконтроль безопасности' : lang === 'en' ? '4. Mandatory Safety Photo Inspection' : '4. 强制性安全照相检查'}
-                      </span>
-                      <p className="text-[11px] text-slate-400">
-                        {lang === 'ru'
-                          ? 'Перед каждым выходом в море капитан обязан подтвердить наличие спасательного оборудования (стандарт Яндекс.Про).'
-                          : lang === 'en'
-                          ? 'Before each departure, the captain must confirm onboard life-saving equipment (Yandex.Pro standard).'
-                          : '每次出海前，船长必须确认船上救生设备齐全（遵循 Yandex.Pro 标准）。'}
-                      </p>
-
-                      <div className="space-y-2 text-xs text-slate-300">
-                        <label className="flex items-center gap-2 bg-slate-950 p-2 rounded border border-white/5 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={captainDocs.hasLifeJackets}
-                            onChange={(e) => setCaptainDocs({...captainDocs, hasLifeJackets: e.target.checked})}
-                            className="rounded text-cyan-500 focus:ring-0 bg-slate-900 border-white/10"
-                          />
-                          <span>{lang === 'ru' ? 'Спасательные жилеты по количеству пассажиров' : lang === 'en' ? 'Life jackets matching passenger count' : '匹配乘客人数的救生衣'}</span>
-                        </label>
-                        <label className="flex items-center gap-2 bg-slate-950 p-2 rounded border border-white/5 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={captainDocs.hasFirstAid}
-                            onChange={(e) => setCaptainDocs({...captainDocs, hasFirstAid: e.target.checked})}
-                            className="rounded text-cyan-500 focus:ring-0 bg-slate-900 border-white/10"
-                          />
-                          <span>{lang === 'ru' ? 'Комплект первой мед. помощи и аптечка ГИМС' : lang === 'en' ? 'First aid kit and maritime medical box' : '急救箱和水上医疗救护包'}</span>
-                        </label>
-                        <label className="flex items-center gap-2 bg-slate-950 p-2 rounded border border-white/5 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={captainDocs.hasRadio}
-                            onChange={(e) => setCaptainDocs({...captainDocs, hasRadio: e.target.checked})}
-                            className="rounded text-cyan-500 focus:ring-0 bg-slate-900 border-white/10"
-                          />
-                          <span>{lang === 'ru' ? 'Радиостанция УКВ диапазона морская' : lang === 'en' ? 'Marine VHF radio transceiver' : '对讲与海洋VHF无线电台'}</span>
-                        </label>
-                      </div>
-                    </div>
-                  )}
-
-                  {captainStep === 5 && (
-                    <div className="space-y-3">
-                      <span className="text-xs font-bold text-cyan-400 block">
-                        {lang === 'ru' ? '5. Проверка Биометрии и Налоги' : lang === 'en' ? '5. Biometric Selfie & Tax Profile' : '5. 人脸生物识别与税务类型'}
-                      </span>
-                      <p className="text-[11px] text-slate-400">
-                        {lang === 'ru'
-                          ? 'Сделайте селфи на веб-камеру вашего устройства для сверки лица с фотографией в паспорте. Укажите форму налогообложения.'
-                          : lang === 'en'
-                          ? 'Take a webcam selfie to match your passport photo. Select your business tax classification.'
-                          : '请使用摄像头拍摄自拍，以与护照照片进行人脸比对。请选择您的纳税人类型。'}
-                      </p>
-
-                      <div className="space-y-3">
-                        <div className="flex bg-slate-950 p-0.5 rounded-lg border border-white/5 text-[10px] font-mono">
-                          <button
-                            onClick={() => setCaptainDocs({...captainDocs, taxType: 'self_employed'})}
-                            className={`flex-1 py-1.5 rounded text-center ${captainDocs.taxType === 'self_employed' ? 'bg-cyan-500/10 text-cyan-400 font-bold' : 'text-slate-500'}`}
-                          >
-                            {lang === 'ru' ? 'Самозанятый (Мой Налог)' : lang === 'en' ? 'Self-Employed' : '个体/自由职业'}
-                          </button>
-                          <button
-                            onClick={() => setCaptainDocs({...captainDocs, taxType: 'ip'})}
-                            className={`flex-1 py-1.5 rounded text-center ${captainDocs.taxType === 'ip' ? 'bg-cyan-500/10 text-cyan-400 font-bold' : 'text-slate-500'}`}
-                          >
-                            {lang === 'ru' ? 'ИП / ООО' : lang === 'en' ? 'Registered Business / LLC' : '企业/公司账户'}
-                          </button>
-                        </div>
-
-                        <label className={`w-full py-2.5 rounded-lg border text-xs font-mono transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                          captainDocs.uploadedSelfie ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-slate-950 border-dashed border-white/10 text-slate-400 hover:text-white'
-                        }`}>
-                          <User className="w-3.5 h-3.5" />
-                          <span>
-                            {captainDocs.uploadedSelfie 
-                              ? (lang === 'ru' ? '✓ Селфи подтверждено' : lang === 'en' ? '✓ Selfie Verified' : '✓ 自拍验证成功') 
-                              : (lang === 'ru' ? 'Пройти Фотоконтроль / Сделать Селфи' : lang === 'en' ? 'Take Facial Verification' : '进行人脸安全比对')}
-                          </span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            capture="user"
-                            className="hidden"
-                            onChange={(e) => {
-                              if (e.target.files?.[0]) {
-                                setCaptainDocs({...captainDocs, uploadedSelfie: true});
-                                triggerToast(lang === 'ru' ? '📸 Фотоконтроль пройден успешно! Лицо совпадает на 98.4%.' : lang === 'en' ? '📸 Biometric check passed! Face match 98.4%.' : '📸 生物识别通过！面部匹配度98.4%');
-                              }
-                            }}
-                          />
-                        </label>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Actions */}
-                  <div className="flex justify-end pt-2">
-                    <button
-                      onClick={nextCaptainStep}
-                      className="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-600 text-slate-950 text-xs font-bold flex items-center gap-1"
-                    >
-                      <span>{captainStep === 5 ? (lang === 'ru' ? 'Завершить проверку' : lang === 'en' ? 'Finish Inspection' : '完成验证') : (lang === 'ru' ? 'Далее' : lang === 'en' ? 'Next' : '下一步')}</span>
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="bg-slate-900/60 p-4 rounded-xl border border-emerald-500/20 space-y-4" id="captain-active-dash">
-                  <div className="flex items-center justify-between border-b border-emerald-500/10 pb-2">
-                    <span className="text-xs font-bold text-emerald-400 uppercase font-mono tracking-wider flex items-center gap-1">
-                      <CheckCircle className="w-4 h-4 text-emerald-400" />
-                      <span>{lang === 'ru' ? 'Кабинет верифицирован' : lang === 'en' ? 'Account Verified' : '账户已实名认证'}</span>
-                    </span>
-                    <span className="text-[9px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded font-mono">
-                      {lang === 'ru' ? 'АКТИВЕН В ЯНДЕКС.ПРО' : lang === 'en' ? 'ACTIVE IN YANDEX.PRO' : '已入驻 YANDEX.PRO'}
-                    </span>
-                  </div>
-
-                  <p className="text-[11px] text-slate-300 leading-relaxed">
+            <div className="bg-slate-900/60 p-5 rounded-2xl border border-amber-500/30 space-y-4" id="captain-active-dash">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-3">
+                <div>
+                  <span className="text-xs font-bold text-amber-400 uppercase font-mono tracking-wider flex items-center gap-1.5">
+                    <Anchor className="w-4 h-4 text-amber-400" />
+                    <span>{lang === 'ru' ? 'Аккаунт Капитана' : 'Captain Account'}</span>
+                  </span>
+                  <p className="text-xs text-slate-300 mt-1">
                     {lang === 'ru'
-                      ? 'Ваш аккаунт полностью синхронизирован с реестром маломерных судов МЧС ГИМС. Доступна автоматическая печать судовых деклараций и договоров аренды.'
-                      : lang === 'en'
-                      ? 'Your account is fully synchronized with the state maritime vessel registry. Automated printing of charter declarations and lease contracts is available.'
-                      : '您的账户已与海事小船登记库完全同步。可自动生成并打印包船申报单及租赁合同。'}
+                      ? 'Авторизация Капитана выполнена. Вы можете свободно публиковать объявления и управлять флотом.'
+                      : 'Captain signed in successfully. You can freely publish listings and manage your fleet.'}
                   </p>
+                </div>
 
-                  <div className="p-3 bg-slate-950 rounded-lg border border-white/5 space-y-2">
-                    <span className="text-[9px] font-mono text-slate-500 uppercase block">{lang === 'ru' ? 'Мои верифицированные лицензии:' : lang === 'en' ? 'Verified Maritime Licenses:' : '已核验的海事执照：'}</span>
-                    <ul className="text-[10px] font-mono text-slate-400 space-y-1">
-                      <li className="flex items-center gap-1"><Check className="w-3 h-3 text-emerald-400" /> {lang === 'ru' ? 'Удостоверение ГИМС: №79АВ001234' : lang === 'en' ? 'GIMS License: #79AB001234' : '海事驾驶执照：№79АВ001234'}</li>
-                      <li className="flex items-center gap-1"><Check className="w-3 h-3 text-emerald-400" /> {lang === 'ru' ? 'Судовой билет: Р 09-12 ВЛ (проверен)' : lang === 'en' ? 'Vessel Ticket: R 09-12 VL (Verified)' : '船舶执照：Р 09-12 ВЛ（已核验）'}</li>
-                    </ul>
-                  </div>
+                {captainVerified ? (
+                  <span className="text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-full font-mono font-bold flex items-center gap-1 shrink-0">
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    {lang === 'ru' ? 'ПОДТВЕРЖДЁННАЯ КВАЛИФИКАЦИЯ' : 'VERIFIED QUALIFICATION'}
+                  </span>
+                ) : (
+                  <span className="text-[10px] text-amber-300 bg-amber-500/10 border border-amber-500/30 px-3 py-1 rounded-full font-mono font-bold flex items-center gap-1 shrink-0">
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
+                    {lang === 'ru' ? 'ДОБРОВОЛЬНАЯ ПРОВЕРКА' : 'OPTIONAL VERIFICATION'}
+                  </span>
+                )}
+              </div>
 
-                  {/* GPS Transmitter Toggle (Strict) */}
-                  <div className="p-3.5 rounded-xl bg-slate-950 border border-emerald-500/10 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <span className="text-xs font-bold text-white block">{lang === 'ru' ? 'GPS/ГЛОНАСС Мониторинг' : lang === 'en' ? 'GPS/GLONASS Monitoring' : 'GPS/格洛纳斯实时监控'}</span>
-                        <span className="text-[10px] text-slate-500 block">{lang === 'ru' ? 'Трансляция координат судна на карты Яндекса' : lang === 'en' ? 'Broadcasting live vessel coordinates on Yandex Maps' : '在地图上实时广播船舶坐标'}</span>
-                      </div>
-                      
-                      <button
-                        onClick={() => setIsTransmittingGPS(!isTransmittingGPS)}
-                        className={`py-1.5 px-3 rounded-lg text-[10px] font-mono font-bold border transition-all ${
-                          isTransmittingGPS
-                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 animate-pulse'
-                            : 'bg-slate-900 text-slate-500 border-white/5'
-                        }`}
-                      >
-                        {isTransmittingGPS ? (lang === 'ru' ? 'ПЕРЕДАЧА...' : lang === 'en' ? 'TRANSMITTING...' : '正在广播...') : (lang === 'ru' ? 'ВКЛЮЧИТЬ' : lang === 'en' ? 'ENABLE' : '开启')}
-                      </button>
-                    </div>
-
-                    {/* Sim logs console */}
-                    {isTransmittingGPS && simulatedLogs.length > 0 && (
-                      <div className="p-2.5 rounded bg-black border border-white/5 font-mono text-[9px] text-emerald-500/90 h-24 overflow-y-auto space-y-1 select-none">
-                        {simulatedLogs.map((log, index) => (
-                          <div key={index} className="truncate">{log}</div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* EMERGENCY SCARY SIGNAL (SOS) - STRICTLY IN CAPTAIN VIEW ONLY */}
-                  <div className="p-4 rounded-xl bg-rose-950/20 border border-rose-500/20 space-y-3" id="captain-sos-panel">
-                    <div className="flex items-center gap-1.5 text-rose-400">
-                      <AlertTriangle className="w-4 h-4 text-rose-400 animate-bounce" />
-                      <span className="text-xs font-bold font-mono uppercase tracking-wider">{lang === 'ru' ? 'Красная Кнопка ГИМС МЧС (SOS)' : lang === 'en' ? 'Emergency SOS Beacon' : '海事紧急求救 (SOS)'}</span>
-                    </div>
-                    <p className="text-[10px] text-rose-300 leading-normal">
-                      {lang === 'ru' 
-                        ? 'Активация этого сигнала отправляет мгновенную эвакуационную команду береговой охране Владивостока с точными координатами ГЛОНАСС. Используйте только при реальной угрозе затопления или крушения!'
-                        : lang === 'en'
-                        ? 'Activating this signal dispatches an immediate coast guard rescue team with precise GLONASS coordinates. Use strictly during life-threatening maritime distress!'
-                        : '触发此信号将携带精确的GLONASS坐标向海岸警卫队发送紧急救援指令。请仅在真正发生海上危机时使用！'}
-                    </p>
-                    
-                    <button
-                      onClick={() => {
-                        onSetPickupPoint({
-                          latLon: selectedVessel ? selectedVessel.latLon : [43.0645, 131.8943],
-                          type: 'evac'
-                        });
-                        triggerToast(lang === 'ru' ? '🚨 МГНОВЕННЫЙ СИГНАЛ БЕДСТВИЯ SOS ОТПРАВЛЕН В ГИМС МЧС РФ!' : lang === 'en' ? '🚨 EMERGENCY SOS DISTRESS SIGNAL SENT TO COAST GUARD!' : '🚨 紧急SOS求救信号已发送至海事部门！');
-                      }}
-                      className="w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs font-mono transition-all shadow-lg shadow-rose-500/20"
-                    >
-                      {lang === 'ru' ? 'АКТИВИРОВАТЬ ЭКСТРЕННУЮ SOS-ЭВАКУАЦИЮ' : lang === 'en' ? 'ACTIVATE EMERGENCY SOS RESCUE' : '触发紧急SOS求救'}
-                    </button>
-                  </div>
-
+              {/* Voluntary Verification Highlight */}
+              <div className="p-4 rounded-xl bg-slate-950 border border-white/10 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-amber-400" />
+                    <span>{lang === 'ru' ? 'Добровольная проверка документов' : 'Voluntary Document Verification'}</span>
+                  </span>
                   <button
+                    type="button"
                     onClick={() => {
-                      setCaptainVerified(false);
-                      setCaptainStep(1);
+                      setCaptainVerified(!captainVerified);
+                      triggerToast(
+                        !captainVerified
+                          ? (lang === 'ru' ? '✨ Статус «Подтверждённая квалификация» присвоен! Ваши объявления получили золотой бейдж.' : '✨ Status "Verified Qualification" granted!')
+                          : (lang === 'ru' ? 'Статус верификации изменен.' : 'Verification status updated.')
+                      );
                     }}
-                    className="text-slate-500 hover:text-slate-300 text-[10px] font-mono block mx-auto text-center hover:underline"
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold transition-all flex items-center gap-1 ${
+                      captainVerified
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                        : 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 hover:from-amber-400 hover:to-amber-500 shadow-md'
+                    }`}
                   >
-                    {lang === 'ru' ? 'Изменить регистрационные данные / документы' : lang === 'en' ? 'Edit Registration Credentials / Documents' : '修改登记资料 / 证明'}
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    <span>{captainVerified ? (lang === 'ru' ? '✓ Подтверждена' : '✓ Verified') : (lang === 'ru' ? 'Пройти проверку' : 'Pass Check')}</span>
                   </button>
                 </div>
-              )}
 
+                <p className="text-[11px] text-slate-400 leading-normal">
+                  {lang === 'ru'
+                    ? '💡 Отсутствие верификации НЕ мешает публикации объявлений. Однако её наличие добавляет знак «Подтверждённая квалификация» на ваши объявления и поднимает их в ТОП поисковой выдачи.'
+                    : '💡 Verification is strictly optional. Having it adds a "Verified Qualification" badge and boosts your listings to the top of search.'}
+                </p>
+
+                {captainVerified && (
+                  <div className="pt-2 border-t border-white/5 text-[10px] font-mono text-emerald-400 flex items-center gap-2">
+                    <Check className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>{lang === 'ru' ? 'Удостоверение ГИМС МЧС и Судовой билет верифицированы' : 'GIMS License and Vessel Ticket verified'}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* GPS Transmitter Toggle */}
+              <div className="p-3.5 rounded-xl bg-slate-950 border border-emerald-500/10 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <span className="text-xs font-bold text-white block">{lang === 'ru' ? 'GPS/ГЛОНАСС Мониторинг' : 'GPS/GLONASS Monitoring'}</span>
+                    <span className="text-[10px] text-slate-500 block">{lang === 'ru' ? 'Трансляция координат судна на карты' : 'Broadcasting live vessel coordinates on map'}</span>
+                  </div>
+                  
+                  <button
+                    type="button"
+                    onClick={() => setIsTransmittingGPS(!isTransmittingGPS)}
+                    className={`py-1.5 px-3 rounded-lg text-[10px] font-mono font-bold border transition-all ${
+                      isTransmittingGPS
+                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 animate-pulse'
+                        : 'bg-slate-900 text-slate-500 border-white/5'
+                    }`}
+                  >
+                    {isTransmittingGPS ? (lang === 'ru' ? 'ПЕРЕДАЧА...' : 'TRANSMITTING...') : (lang === 'ru' ? 'ВКЛЮЧИТЬ' : 'ENABLE')}
+                  </button>
+                </div>
+
+                {isTransmittingGPS && simulatedLogs.length > 0 && (
+                  <div className="p-2.5 rounded bg-black border border-white/5 font-mono text-[9px] text-emerald-500/90 h-24 overflow-y-auto space-y-1 select-none">
+                    {simulatedLogs.map((log, index) => (
+                      <div key={index} className="truncate">{log}</div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* EMERGENCY SOS BUTTON */}
+              <div className="p-4 rounded-xl bg-rose-950/20 border border-rose-500/20 space-y-3" id="captain-sos-panel">
+                <div className="flex items-center gap-1.5 text-rose-400">
+                  <AlertTriangle className="w-4 h-4 text-rose-400 animate-bounce" />
+                  <span className="text-xs font-bold font-mono uppercase tracking-wider">{lang === 'ru' ? 'Красная Кнопка ГИМС МЧС (SOS)' : 'Emergency SOS Beacon'}</span>
+                </div>
+                <p className="text-[10px] text-rose-300 leading-normal">
+                  {lang === 'ru' 
+                    ? 'Активация этого сигнала отправляет мгновенную эвакуационную команду береговой охране Владивостока с точными координатами ГЛОНАСС.'
+                    : 'Activating this signal dispatches an immediate coast guard rescue team with GLONASS coordinates.'}
+                </p>
+                
+                <button
+                  type="button"
+                  onClick={() => {
+                    onSetPickupPoint({
+                      latLon: selectedVessel ? selectedVessel.latLon : [43.0645, 131.8943],
+                      type: 'evac'
+                    });
+                    triggerToast(lang === 'ru' ? '🚨 СИГНАЛ БЕДСТВИЯ SOS ОТПРАВЛЕН В ГИМС МЧС РФ!' : '🚨 SOS DISTRESS SIGNAL SENT TO COAST GUARD!');
+                  }}
+                  className="w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs font-mono transition-all shadow-lg shadow-rose-500/20"
+                >
+                  {lang === 'ru' ? 'АКТИВИРОВАТЬ ЭКСТРЕННУЮ SOS-ЭВАКУАЦИЮ' : 'ACTIVATE EMERGENCY SOS RESCUE'}
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (onRoleChange) onRoleChange('captain');
+                }}
+                className="w-full py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold rounded-xl text-xs font-mono flex items-center justify-center gap-2 transition-all shadow-lg shadow-amber-500/10"
+              >
+                <Anchor className="w-4 h-4" />
+                <span>{lang === 'ru' ? 'Открыть Мостик Капитана' : 'Open Captain Bridge'}</span>
+              </button>
             </div>
-          )}
+          </div>
+        )}
 
         </div>
       </div>

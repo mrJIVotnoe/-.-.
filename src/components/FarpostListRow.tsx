@@ -207,17 +207,23 @@ export default function FarpostListRow({
 
         {/* Vessel Name & Quick spec highlight */}
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <h3 
               onClick={() => onSelect(vessel)}
               className="text-base font-bold text-white hover:text-cyan-400 cursor-pointer tracking-tight"
             >
               {vessel.name}
             </h3>
-            <div className="flex gap-1">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <span className="text-[10px] font-bold text-amber-400 font-mono flex items-center bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
                 ★ {vessel.rating.toFixed(2)}
               </span>
+              {(vessel.isCaptainVerified || vessel.verifiedQualification) && (
+                <span className="text-[9px] font-mono font-black uppercase bg-gradient-to-r from-amber-400 to-amber-300 text-slate-950 px-2 py-0.5 rounded flex items-center gap-1 shadow-sm border border-amber-300">
+                  <ShieldCheck className="w-3 h-3 text-slate-950 stroke-[2.5]" />
+                  <span>{lang === 'ru' ? 'Подтверждённая квалификация' : lang === 'en' ? 'Verified Qualification' : '已核验资质'}</span>
+                </span>
+              )}
             </div>
           </div>
           <p className="text-xs text-slate-300 line-clamp-1 mt-1 leading-relaxed">

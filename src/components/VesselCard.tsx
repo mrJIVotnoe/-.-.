@@ -84,6 +84,12 @@ export default function VesselCard({
             <span className="px-2.5 py-1 text-[9px] font-mono font-bold tracking-wider uppercase rounded-md bg-slate-950/85 backdrop-blur-md text-cyan-400 border border-white/10">
               {getCategoryLabel(vessel.category)}
             </span>
+            {(vessel.isCaptainVerified || vessel.verifiedQualification) && (
+              <span className="px-2.5 py-1 text-[9px] font-mono font-black tracking-wider uppercase rounded-md bg-gradient-to-r from-amber-400 to-amber-300 text-slate-950 flex items-center gap-1 shadow-md border border-amber-300/60">
+                <ShieldCheck className="w-3.5 h-3.5 text-slate-950 stroke-[2.5]" />
+                <span>{lang === 'ru' ? 'Подтверждённая квалификация' : lang === 'en' ? 'Verified Qualification' : '已核验资质'}</span>
+              </span>
+            )}
             {vessel.hasSharkRepeller && (
               <span className="px-2.5 py-1 text-[9px] font-mono font-bold tracking-wider uppercase rounded-md bg-amber-500 text-slate-950 flex items-center gap-1">
                 <ShieldCheck className="w-3 h-3 stroke-[2.5]" />
@@ -132,13 +138,20 @@ export default function VesselCard({
           </div>
         )}
 
-        {/* Homeport info */}
+        {/* Homeport info & Editorial Title */}
         <div className="absolute bottom-6 left-4 right-4">
-          <div className="flex items-center gap-1 text-[10px] font-mono text-cyan-300 uppercase">
-            <Anchor className="w-3.5 h-3.5" />
-            <span>{vessel.homeport}</span>
+          <div className="flex items-center justify-between gap-2 text-[10px] font-mono text-amber-300 uppercase">
+            <div className="flex items-center gap-1">
+              <Anchor className="w-3.5 h-3.5 text-amber-400" />
+              <span>{vessel.homeport}</span>
+            </div>
+            <span className="font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/20">
+              {vessel.category.toUpperCase()} • ДО {vessel.capacity} ГОСТЕЙ
+            </span>
           </div>
-          <h4 className="text-base font-bold text-white tracking-tight mt-0.5 line-clamp-1">{vessel.name}</h4>
+          <h4 className="text-xl sm:text-2xl font-editorial text-white tracking-tight mt-1 line-clamp-1">
+            {vessel.name}{vessel.name.endsWith('.') ? '' : '.'}
+          </h4>
         </div>
       </div>
 
@@ -240,15 +253,12 @@ export default function VesselCard({
             <button
               onClick={() => onBook(vessel)}
               id={`btn-book-${vessel.id}`}
-              className={`px-4 py-2 rounded-xl font-bold text-xs transition-all shadow-md ${
-                vessel.category === 'taxi' || vessel.category === 'jetski'
-                  ? 'bg-gradient-to-r from-cyan-400 to-emerald-400 text-slate-950 hover:opacity-90 shadow-cyan-500/10'
-                  : 'bg-cyan-500 hover:bg-cyan-600 text-slate-950 shadow-cyan-500/5'
-              }`}
+              className="px-5 py-2.5 rounded-full font-bold text-xs transition-all shadow-lg bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-amber-500/10 flex items-center gap-1.5 hover:scale-105"
             >
-              {vessel.category === 'taxi' || vessel.category === 'jetski' 
+              <span>{vessel.category === 'taxi' || vessel.category === 'jetski' 
                 ? (lang === 'ru' ? 'Подать к причалу' : lang === 'en' ? 'Call to Pier' : '呼叫到码头') 
-                : (lang === 'ru' ? 'Аренда' : lang === 'en' ? 'Rent' : '租用')}
+                : (lang === 'ru' ? 'Забронировать' : lang === 'en' ? 'Book' : '预订')}</span>
+              <span className="text-slate-900 font-extrabold">→</span>
             </button>
           </div>
         </div>

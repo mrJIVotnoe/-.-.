@@ -23,6 +23,7 @@ import {
   Eye,
   Camera,
   ShieldAlert,
+  ShieldCheck,
   Zap
 } from 'lucide-react';
 import { useTranslation } from '../lib/translations';
@@ -64,6 +65,13 @@ export default function CaptainsBridge({ vessels, setVessels, bookings, setBooki
   // Hidden/collapsible controls for clean Captain UI
   const [showWeChatLoc, setShowWeChatLoc] = useState<boolean>(false);
   const [showDevSettings, setShowDevSettings] = useState<boolean>(false);
+
+  // Voluntary Qualification States
+  const [captainVerified, setCaptainVerified] = useState<boolean>(true);
+  const [showVerificationModal, setShowVerificationModal] = useState<boolean>(false);
+  const [gimsLicenseInput, setGimsLicenseInput] = useState<string>('79АВ001234');
+  const [passportInput, setPassportInput] = useState<string>('0518 948120');
+  const [boatTicketInput, setBoatTicketInput] = useState<string>('Р 09-12 ВЛ');
 
   // Multilingual content state - Chinese translation lookup
   const [vesselTranslations, setVesselTranslations] = useState<Record<string, { nameZh: string; descZh: string }>>({
@@ -154,10 +162,10 @@ export default function CaptainsBridge({ vessels, setVessels, bookings, setBooki
 
     triggerToast(
       lang === 'ru'
-        ? `🎉 Объявление «${newVesselName}» успешно опубликовано и доступно в поиске на главной странице «Аренда флота»! Оплата через Национальную платёжную систему (НСПК / СБП) подтверждена.`
+        ? `🎉 Объявление «${newVesselName}» бесплатно опубликовано на этапе запуска платформы (0 ₽)!`
         : lang === 'zh' || lang === 'zh-TW'
-        ? `🎉 船只“${newVesselName}”已成功发布并同步至主页目录！微信/支付宝费用已结清。`
-        : `🎉 Vessel "${newVesselName}" successfully published on the main Fleet Rental tab! Payment confirmed.`
+        ? `🎉 船只“${newVesselName}”在上线初期免费发布成功！`
+        : `🎉 Vessel "${newVesselName}" published for free during the platform launch phase!`
     );
   };
 
@@ -178,17 +186,12 @@ export default function CaptainsBridge({ vessels, setVessels, bookings, setBooki
 
     setShowPromoteModal(false);
 
-    const bankName = 
-      selectedPaymentGateway === 'nspk_sbp' ? 'Национальную платёжную систему (НСПК / Мир) & СБП' :
-      selectedPaymentGateway === 'wechat_pay' ? '微信支付 (WeChat Pay Merchant)' :
-      selectedPaymentGateway === 'stripe' ? 'Stripe Corporate Global' : 'Эквайринг';
-
     triggerToast(
       lang === 'ru'
-        ? `⚡ Судно «${currentEditingVessel.name}» успешно поднято в ТОП-1! Продвижение оплачено через ${bankName}.`
+        ? `⚡ Судно «${currentEditingVessel.name}» бесплатно закреплено в ТОП-1 на этапе запуска платформы (0 ₽)!`
         : lang === 'zh' || lang === 'zh-TW'
-        ? `⚡ 船只“${currentEditingVessel.name}”已置顶至 TOP-1！通过 ${bankName} 完成支付。`
-        : `⚡ Vessel "${currentEditingVessel.name}" promoted to TOP-1 via ${bankName}!`
+        ? `⚡ 船只“${currentEditingVessel.name}”已在平台初期免费置顶至 TOP-1！`
+        : `⚡ Vessel "${currentEditingVessel.name}" promoted to TOP-1 for free during launch!`
     );
   };
 
@@ -594,6 +597,72 @@ export default function CaptainsBridge({ vessels, setVessels, bookings, setBooki
               </span>
             </div>
 
+          </div>
+
+          {/* Voluntary Document & Qualification Verification Section */}
+          <div className="bg-slate-900 border border-amber-500/30 rounded-3xl p-6 relative overflow-hidden text-left shadow-2xl space-y-5">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-white/5 pb-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <ShieldCheck className="w-5 h-5 text-amber-400 shrink-0" />
+                  <h3 className="text-base font-bold text-white uppercase tracking-tight">
+                    {lang === 'ru' ? 'Добровольная проверка документов и квалификации' : 'Voluntary Document & Qualification Verification'}
+                  </h3>
+                  {captainVerified ? (
+                    <span className="px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 text-[10px] font-mono font-bold flex items-center gap-1 shadow">
+                      <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
+                      {lang === 'ru' ? 'ПОДТВЕРЖДЁННАЯ КВАЛИФИКАЦИЯ' : 'VERIFIED QUALIFICATION'}
+                    </span>
+                  ) : (
+                    <span className="px-3 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/40 text-[10px] font-mono font-bold flex items-center gap-1">
+                      <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
+                      {lang === 'ru' ? 'ДОБРОВОЛЬНО (НЕ ВЕРИФИЦИРОВАНО)' : 'OPTIONAL (NOT VERIFIED)'}
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed max-w-3xl pt-1">
+                  {lang === 'ru'
+                    ? 'Проверка документов является полностью добровольной и НЕ ограничивает публикацию ваших объявлений. Прошедшие проверку капитаны получают особый статус «Подтверждённая квалификация», золотой знак доверия и приоритетный рейтинг при поиске.'
+                    : 'Document verification is strictly voluntary and does NOT restrict publishing listings. Verified captains receive a "Verified Qualification" badge and priority ranking.'}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowVerificationModal(true)}
+                className={`px-5 py-2.5 rounded-xl text-xs font-mono font-bold transition-all shrink-0 flex items-center gap-2 shadow-lg ${
+                  captainVerified
+                    ? 'bg-slate-950 hover:bg-slate-800 text-emerald-400 border border-emerald-500/30'
+                    : 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 shadow-amber-500/20'
+                }`}
+              >
+                <ShieldCheck className="w-4 h-4" />
+                <span>
+                  {captainVerified
+                    ? (lang === 'ru' ? 'Управление верификацией' : 'Manage Qualification')
+                    : (lang === 'ru' ? 'Пройти верификацию' : 'Verify Qualification')}
+                </span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs font-mono">
+              <div className="p-3.5 bg-slate-950/80 rounded-xl border border-white/5 space-y-1">
+                <span className="text-[10px] text-slate-500 block uppercase">{lang === 'ru' ? 'Права ГИМС МЧС:' : 'GIMS LICENSE:'}</span>
+                <span className="font-bold text-slate-200">{captainVerified ? `№ ${gimsLicenseInput}` : '— Не предоставлено —'}</span>
+              </div>
+              <div className="p-3.5 bg-slate-950/80 rounded-xl border border-white/5 space-y-1">
+                <span className="text-[10px] text-slate-500 block uppercase">{lang === 'ru' ? 'Судовой билет МЧС:' : 'VESSEL REGISTRATION:'}</span>
+                <span className="font-bold text-slate-200">{captainVerified ? boatTicketInput : '— Не предоставлено —'}</span>
+              </div>
+              <div className="p-3.5 bg-slate-950/80 rounded-xl border border-white/5 space-y-1">
+                <span className="text-[10px] text-slate-500 block uppercase">{lang === 'ru' ? 'Преимущество в Поиске:' : 'SEARCH ADVANTAGE:'}</span>
+                <span className={`font-bold ${captainVerified ? 'text-amber-400' : 'text-slate-400'}`}>
+                  {captainVerified
+                    ? (lang === 'ru' ? '★ Золотой знак +25% к рейтингу' : '★ Gold Badge +25% Rank')
+                    : (lang === 'ru' ? 'Стандартное отображение' : 'Standard Ranking')}
+                </span>
+              </div>
+            </div>
           </div>
 
           {/* Quick Price control panel */}
@@ -1546,7 +1615,7 @@ export default function CaptainsBridge({ vessels, setVessels, bookings, setBooki
                   Developer Configuration & API Webhooks
                 </h3>
                 <p className="text-xs text-slate-400 text-left">
-                  Прямое управление токенами Бота и конфигурацией шлюзов Yandex Cloud / Farvater Endpoint
+                  Прямое управление токенами Бота и конфигурацией шлюзов Yandex Cloud / JIV Marine Endpoint
                 </p>
               </div>
 
@@ -1622,8 +1691,8 @@ export default function CaptainsBridge({ vessels, setVessels, bookings, setBooki
               </h2>
               <p className="text-xs text-slate-400">
                 {lang === 'ru' 
-                  ? 'Заполните параметры плавсредства. После оплаты через Национальную платёжную систему (НСПК / СБП) объявление мгновенно появится в поиске.' 
-                  : 'Fill in vessel specs. After payment confirmation, the listing appears instantly in the catalog.'}
+                  ? 'Заполните параметры плавсредства. На этапе запуска платформы публикация объявлений полностью бесплатна (0 ₽).' 
+                  : 'Fill in vessel specs. Publishing is 100% FREE during the platform launch phase (0 ₽).'}
               </p>
             </div>
 
@@ -1804,17 +1873,20 @@ export default function CaptainsBridge({ vessels, setVessels, bookings, setBooki
                 </div>
               </div>
 
-              {/* Payment Info Gateway Box */}
-              <div className="p-3.5 rounded-xl bg-cyan-950/40 border border-cyan-500/30 text-xs font-mono flex items-center justify-between gap-3">
+              {/* Free Launch Activation Box */}
+              <div className="p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-xs font-mono flex flex-col sm:flex-row items-center justify-between gap-3">
                 <div className="space-y-0.5">
-                  <span className="text-cyan-300 font-bold block">Плата за активацию листинга:</span>
-                  <span className="text-[10px] text-slate-400">Национальная платёжная система (НСПК / Мир) & СБП • 500 ₽</span>
+                  <span className="text-emerald-300 font-bold block flex items-center gap-1.5">
+                    <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] uppercase font-extrabold">🎁 БЕСПЛАТНО</span>
+                    <span>Активация листинга: 0 ₽</span>
+                  </span>
+                  <span className="text-[10px] text-slate-400">Плата за размещение объявлений временно не взимается (0% комиссия)</span>
                 </div>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-extrabold text-xs transition-all shadow-lg font-mono shrink-0"
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-extrabold text-xs transition-all shadow-lg font-mono shrink-0"
                 >
-                  Оплатить и Опубликовать
+                  Опубликовать (Бесплатно)
                 </button>
               </div>
             </form>
@@ -1847,7 +1919,10 @@ export default function CaptainsBridge({ vessels, setVessels, bookings, setBooki
             </div>
 
             <div className="p-3.5 rounded-xl bg-slate-950 border border-white/10 space-y-2 text-xs font-mono">
-              <span className="text-slate-300 font-bold block">Преимущества ТОП-1 продвижения:</span>
+              <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-[11px] font-mono font-bold flex items-center gap-2">
+                <span>🎁 <strong>Бесплатное продвижение на этапе запуска:</strong> 0 ₽ вместо 1 500 ₽</span>
+              </div>
+              <span className="text-slate-300 font-bold block pt-1">Преимущества ТОП-1 продвижения:</span>
               <ul className="space-y-1.5 text-[11px] text-slate-400">
                 <li className="flex items-center gap-2">
                   <CheckCircle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
@@ -1864,53 +1939,6 @@ export default function CaptainsBridge({ vessels, setVessels, bookings, setBooki
               </ul>
             </div>
 
-            <div className="space-y-2 text-xs font-mono">
-              <label className="text-slate-400 block font-bold">Выберите банкерский шлюз для оплаты:</label>
-              <div className="space-y-2">
-                <button
-                  type="button"
-                  onClick={() => setSelectedPaymentGateway('nspk_sbp')}
-                  className={`w-full p-3 rounded-xl border text-left transition-all flex items-center justify-between ${
-                    selectedPaymentGateway === 'nspk_sbp' ? 'bg-amber-500/10 border-amber-500 text-amber-300' : 'bg-slate-950 border-white/5 text-slate-400'
-                  }`}
-                >
-                  <div>
-                    <span className="font-bold block">🇷🇺 Национальная платёжная система (НСПК / Мир) & СБП</span>
-                    <span className="text-[10px] text-slate-500">Система Быстрых Платежей НСПК с мгновенным зачислением</span>
-                  </div>
-                  <span className="font-bold text-amber-400">1 500 ₽ / нед</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setSelectedPaymentGateway('wechat_pay')}
-                  className={`w-full p-3 rounded-xl border text-left transition-all flex items-center justify-between ${
-                    selectedPaymentGateway === 'wechat_pay' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-300' : 'bg-slate-950 border-white/5 text-slate-400'
-                  }`}
-                >
-                  <div>
-                    <span className="font-bold block">🇨🇳 微信支付 (WeChat Pay Merchant)</span>
-                    <span className="text-[10px] text-slate-500">支持人民币结算与商户直连</span>
-                  </div>
-                  <span className="font-bold text-emerald-400">130 ￥ / 周</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setSelectedPaymentGateway('stripe')}
-                  className={`w-full p-3 rounded-xl border text-left transition-all flex items-center justify-between ${
-                    selectedPaymentGateway === 'stripe' ? 'bg-cyan-500/10 border-cyan-500 text-cyan-300' : 'bg-slate-950 border-white/5 text-slate-400'
-                  }`}
-                >
-                  <div>
-                    <span className="font-bold block">🌐 Stripe Corporate Global</span>
-                    <span className="text-[10px] text-slate-500">Visa / Mastercard / Apple Pay</span>
-                  </div>
-                  <span className="font-bold text-cyan-400">$20 / wk</span>
-                </button>
-              </div>
-            </div>
-
             <div className="flex justify-end gap-3 pt-2">
               <button
                 type="button"
@@ -1922,9 +1950,105 @@ export default function CaptainsBridge({ vessels, setVessels, bookings, setBooki
               <button
                 type="button"
                 onClick={handlePromoteVesselSubmit}
-                className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-400 hover:to-rose-400 text-slate-950 font-extrabold text-xs transition-all shadow-lg font-mono"
+                className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-extrabold text-xs transition-all shadow-lg font-mono flex items-center gap-1.5"
               >
-                Оплатить и Закрепить
+                <Zap className="w-4 h-4 fill-slate-950" />
+                <span>Закрепить в ТОП-1 (Бесплатно)</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- MODAL 3: VOLUNTARY QUALIFICATION VERIFICATION --- */}
+      {showVerificationModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-amber-500/40 rounded-3xl max-w-lg w-full p-6 space-y-5 shadow-2xl animate-fade-in relative text-left">
+            <button 
+              onClick={() => setShowVerificationModal(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white p-1.5 rounded-lg bg-slate-950/60"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="space-y-1">
+              <span className="px-3 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-mono font-bold uppercase inline-flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>ДОБРОВОЛЬНАЯ КВАЛИФИКАЦИЯ МЧС ГИМС</span>
+              </span>
+              <h2 className="text-xl font-bold text-white tracking-tight">
+                Проверка документов Капитана
+              </h2>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Заполнение данного раздела является <strong className="text-amber-300">добровольным</strong>. Вы можете публиковать любые объявления и работать на платформе без верификации.
+              </p>
+            </div>
+
+            <div className="space-y-3 text-xs font-mono">
+              <div className="space-y-1">
+                <label className="text-slate-300 block font-bold">Удостоверение маломерного судна ГИМС МЧС:</label>
+                <input
+                  type="text"
+                  value={gimsLicenseInput}
+                  onChange={(e) => setGimsLicenseInput(e.target.value)}
+                  placeholder="79АВ001234"
+                  className="w-full bg-slate-950 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:border-amber-400 focus:outline-none"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-slate-300 block font-bold">Паспортные данные гражданина РФ:</label>
+                <input
+                  type="text"
+                  value={passportInput}
+                  onChange={(e) => setPassportInput(e.target.value)}
+                  placeholder="0518 948120"
+                  className="w-full bg-slate-950 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:border-amber-400 focus:outline-none"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-slate-300 block font-bold">Бортовой номер судна / Судовой билет:</label>
+                <input
+                  type="text"
+                  value={boatTicketInput}
+                  onChange={(e) => setBoatTicketInput(e.target.value)}
+                  placeholder="Р 09-12 ВЛ"
+                  className="w-full bg-slate-950 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:border-amber-400 focus:outline-none"
+                />
+              </div>
+
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-200/90 leading-relaxed">
+                ✨ <strong>Что даёт верификация?</strong>
+                <br />
+                Все ваши объявления получат золотой значок <span className="font-bold text-amber-300">«Подтверждённая квалификация»</span> и будут автоматически подняты выше в поисковой выдаче.
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setCaptainVerified(false);
+                  setShowVerificationModal(false);
+                  triggerToast('Статус верификации сброшен.');
+                }}
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-950 text-slate-400 text-xs font-mono hover:text-white transition-all text-center"
+              >
+                Отменить верификацию
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setCaptainVerified(true);
+                  setShowVerificationModal(false);
+                  triggerToast('🎉 Документы проверены! Вам присвоен статус «Подтверждённая квалификация».');
+                }}
+                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold text-xs transition-all shadow-lg font-mono flex items-center justify-center gap-1.5"
+              >
+                <ShieldCheck className="w-4 h-4" />
+                <span>Подтвердить квалификацию</span>
               </button>
             </div>
           </div>

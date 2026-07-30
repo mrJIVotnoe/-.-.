@@ -10,6 +10,7 @@ import WeatherWidget from './components/WeatherWidget';
 import InteractiveSeaMap from './components/InteractiveSeaMap';
 import VesselCard from './components/VesselCard';
 import FarpostListRow from './components/FarpostListRow';
+import FarvaterHeroSection from './components/FarvaterHeroSection';
 import SeaConcierge from './components/SeaConcierge';
 import ArchitecturePanel from './components/ArchitecturePanel';
 import BookingDrawer from './components/BookingDrawer';
@@ -22,6 +23,11 @@ import ReviewsLogbook from './components/ReviewsLogbook';
 import PassengerCabin from './components/PassengerCabin';
 import PartnerBridge from './components/PartnerBridge';
 import MapToolsPanel from './components/MapToolsPanel';
+import SelfHostingModal from './components/SelfHostingModal';
+import TelegramHubModal from './components/TelegramHubModal';
+import WeChatHubModal from './components/WeChatHubModal';
+import { initTelegramEnvironment } from './lib/telegramSDK';
+import { initWeChatEnvironment } from './lib/wechatSDK';
 import { LanguageProvider, useTranslation, Language } from './lib/translations';
 import LanguageDropdown from './components/LanguageDropdown';
 import { ProjectLineProvider, useProjectLine } from './lib/projectLineContext';
@@ -54,7 +60,13 @@ import {
   Moon,
   Sunset,
   Clock,
-  Sliders
+  Sliders,
+  CloudSun,
+  Radio,
+  Server,
+  Send,
+  MessageSquare,
+  Maximize2
 } from 'lucide-react';
 
 function AppContent() {
@@ -276,10 +288,24 @@ function AppContent() {
   const [customRoutePoints, setCustomRoutePoints] = useState<[number, number][]>([]);
   const [customPickupPoint, setCustomPickupPoint] = useState<{ latLon: [number, number]; type: 'pickup' | 'evac' } | null>(null);
 
+  // Top Tray Modals state for Hydromet Center, Radar, Self-Hosting, Telegram & WeChat
+  const [isHydrometModalOpen, setIsHydrometModalOpen] = useState<boolean>(false);
+  const [isRadarModalOpen, setIsRadarModalOpen] = useState<boolean>(false);
+  const [isSelfHostingModalOpen, setIsSelfHostingModalOpen] = useState<boolean>(false);
+  const [isTelegramModalOpen, setIsTelegramModalOpen] = useState<boolean>(false);
+  const [isWeChatModalOpen, setIsWeChatModalOpen] = useState<boolean>(false);
+
+  // Initialize Telegram & WeChat WebApp SDKs
+  useEffect(() => {
+    initTelegramEnvironment();
+    initWeChatEnvironment();
+  }, []);
+
   // --- Active Sub-Sections tabs ---
   // 'rent' (Yachts list) | 'shared' (Sea Concierge) | 'architecture' (Specs) | 'captain' (Captain's Bridge) | 'partner' (Partner Bridge) | 'flight' (Digital Captain Hub) | 'auth' (Security & Verification) | 'cabin' (Passenger Cabin)
   const [activeSection, setActiveSection] = useState<'rent' | 'shared' | 'architecture' | 'captain' | 'partner' | 'flight' | 'auth' | 'cabin'>('rent');
   const [authRole, setAuthRole] = useState<'client' | 'captain' | 'partner'>('client');
+  const [selectedRouteId, setSelectedRouteId] = useState<string | null>('route-1');
 
   // --- Booking flow state ---
   const [bookingVessel, setBookingVessel] = useState<Vessel | null>(null);
@@ -372,6 +398,18 @@ function AppContent() {
   return (
     <div className={`min-h-screen bg-slate-950 text-slate-100 flex flex-col relative theme-${theme}`} id="app-root-container">
       
+      {/* Global Atmospheric High-Res Background Image (from Hero Sunset Yacht View) */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden select-none">
+        <img 
+          src="https://images.unsplash.com/photo-1567899378494-47b22a2ae96a?auto=format&fit=crop&w=2000&q=80" 
+          alt="Journey In Vladivostok Background"
+          referrerPolicy="no-referrer"
+          className="w-full h-full object-cover object-center opacity-35 filter brightness-75 contrast-125 saturate-110"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/90 via-slate-950/75 to-slate-950/95 mix-blend-multiply" />
+        <div className="absolute inset-0 bg-slate-950/30" />
+      </div>
+
       {/* Dynamic Animated Sea/Water particle mesh in background */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0" id="sea-waves-backdrop">
         <div className="absolute top-[-20%] left-[-10%] w-[120%] h-[70%] bg-gradient-to-b from-cyan-950/20 via-blue-950/10 to-transparent rotate-[-3deg] blur-3xl" />
@@ -390,35 +428,40 @@ function AppContent() {
       </div>
 
       {/* Primary Floating Header (Glassmorphism + "Antigravity" layout) */}
-      <header className="relative z-20 border-b border-white/5 bg-slate-950/80 backdrop-blur-xl sticky top-0 shadow-lg shadow-black/40" id="main-app-header">
+      <header className="relative z-20 border-b border-white/10 bg-slate-950/85 backdrop-blur-xl sticky top-0 shadow-2xl shadow-black/60" id="main-app-header">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 flex flex-col xl:flex-row xl:items-center justify-between gap-2.5 xl:gap-4">
           
           {/* Top/Left Branding & Right Utility Controls on compact screens */}
           <div className="flex items-center justify-between gap-3 shrink-0">
-            {/* Logo Badge & Title */}
-            <div className="flex items-center gap-2.5 shrink-0 min-w-0">
-              <div className="relative group p-1.5 sm:p-2 rounded-xl bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 shadow-lg shadow-cyan-500/20 flex items-center justify-center transition-all duration-300 hover:scale-105 shrink-0" id="jiv-badge-logo">
-                <div className="absolute inset-0 bg-gradient-to-br from-cyan-400 to-indigo-600 rounded-xl blur opacity-30 group-hover:opacity-65 transition-opacity duration-300 animate-pulse" />
-                <div className="relative bg-slate-950 px-2 sm:px-2.5 py-1 rounded-lg flex items-center gap-1.5 border border-white/10">
-                  <Compass className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-400 animate-[spin_10s_linear_infinite] shrink-0" />
-                  <span className="text-xs sm:text-sm font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-400 font-mono">JIV</span>
+            {/* Logo Badge & Title (Journey In Vladivostok / JIV) */}
+            <div className="flex items-center gap-3 shrink-0 min-w-0">
+              <div 
+                className="flex items-center gap-2.5 cursor-pointer group" 
+                onClick={() => setActiveSection('rent')}
+                id="main-logo-brand"
+              >
+                {/* Stylized New JIV Emblem Badge */}
+                <div className="relative flex items-center justify-center w-8 sm:w-9 h-8 sm:h-9 rounded-xl bg-gradient-to-br from-amber-300 via-amber-400 to-amber-600 text-slate-950 font-extrabold text-sm sm:text-base tracking-tighter shadow-[0_0_18px_rgba(245,158,11,0.4)] group-hover:scale-105 transition-all border border-amber-300/50 shrink-0">
+                  <span>JIV</span>
+                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-amber-200 animate-ping" />
+                </div>
+
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-base sm:text-lg font-black tracking-wider text-white font-sans uppercase leading-none">
+                      JOURNEY IN VLADIVOSTOK
+                    </span>
+                  </div>
+                  <span className="text-[9px] font-mono text-amber-400/90 font-semibold tracking-widest uppercase mt-0.5">
+                    MARINA & YACHT CHARTER
+                  </span>
                 </div>
               </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-sm sm:text-base font-black tracking-wide text-white font-sans uppercase flex items-center gap-1 truncate">
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-sky-300">Journey</span>
-                    <span className="text-slate-400 text-[10px] sm:text-xs font-medium tracking-normal lowercase">in</span>
-                    <span className="text-white">Vladivostok</span>
-                  </span>
-                  <span className="text-[9px] sm:text-[10px] bg-cyan-500/10 text-cyan-400 font-mono px-1.5 sm:px-2 py-0.5 rounded-md border border-cyan-500/20 shrink-0">
-                    {lang === 'ru' ? 'ПРОТОТИП' : lang === 'en' ? 'PROTOTYPE' : '原型'}
-                  </span>
-                </div>
-                <span className="text-[9px] sm:text-[10px] text-slate-400 font-mono tracking-wider block truncate">
-                  {lang === 'ru' ? 'ВЛАДИВОСТОК • ЗАЛИВ ПЕТРА ВЕЛИКОГО' : lang === 'en' ? 'VLADIVOSTOK • PETER THE GREAT GULF' : '符拉迪沃斯托克 • 彼得大帝湾'}
-                </span>
-              </div>
+
+              <div className="hidden lg:block h-5 w-[1px] bg-white/15" />
+              <span className="hidden lg:block text-[10px] text-slate-300 font-mono tracking-widest uppercase bg-slate-900/60 px-2.5 py-1 rounded-full border border-white/10">
+                {lang === 'ru' ? 'ВЛАДИВОСТОК • ЗАЛИВ ПЕТРА ВЕЛИКОГО' : 'VLADIVOSTOK • PETER THE GREAT GULF'}
+              </span>
             </div>
 
             {/* Right Controls for Mobile/Tablet (< xl screens) */}
@@ -492,16 +535,175 @@ function AppContent() {
               <span>{t('login')}</span>
             </button>
 
+            {/* Dynamic Role-Based Personal Account / Cabin / Bridge Button (Right after Login) */}
+            {authRole === 'captain' ? (
+              <button
+                onClick={() => setActiveSection('captain')}
+                id="nav-tab-cabin-captain"
+                className={`px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold tracking-wide transition-all flex items-center gap-1.5 relative border shrink-0 whitespace-nowrap shadow-md ${
+                  activeSection === 'captain'
+                    ? 'bg-gradient-to-r from-amber-950/50 via-slate-900 to-amber-950/40 text-amber-400 border-amber-500/60 shadow-amber-500/10'
+                    : 'bg-amber-500/10 text-amber-300 hover:text-white hover:bg-amber-500/20 border-amber-500/30'
+                }`}
+              >
+                <Anchor className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span>{lang === 'ru' ? 'Мостик Капитана' : lang === 'zh' || lang === 'zh-TW' ? '船长驾驶台' : 'Captain Bridge'}</span>
+                <span className="text-[9px] font-mono px-1.5 py-0.5 bg-amber-400/20 text-amber-300 rounded font-black border border-amber-400/30">
+                  CAPTAIN
+                </span>
+              </button>
+            ) : authRole === 'partner' ? (
+              <button
+                onClick={() => setActiveSection('partner')}
+                id="nav-tab-cabin-partner"
+                className={`px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold tracking-wide transition-all flex items-center gap-1.5 relative border shrink-0 whitespace-nowrap shadow-md ${
+                  activeSection === 'partner'
+                    ? 'bg-gradient-to-r from-cyan-950/50 via-slate-900 to-cyan-950/40 text-cyan-400 border-cyan-500/60 shadow-cyan-500/10'
+                    : 'bg-cyan-500/10 text-cyan-300 hover:text-white hover:bg-cyan-500/20 border-cyan-500/30'
+                }`}
+              >
+                <Building2 className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                <span>{lang === 'ru' ? 'Мостик Партнёра' : lang === 'zh' || lang === 'zh-TW' ? '合作伙伴中心' : 'Partner Hub'}</span>
+                <span className="text-[9px] font-mono px-1.5 py-0.5 bg-cyan-400/20 text-cyan-300 rounded font-black border border-cyan-400/30">
+                  PARTNER
+                </span>
+              </button>
+            ) : (
+              <button
+                onClick={() => setActiveSection('cabin')}
+                id="nav-tab-cabin"
+                className={`px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold tracking-wide transition-all flex items-center gap-1.5 relative border border-rose-500/20 shrink-0 whitespace-nowrap ${
+                  activeSection === 'cabin'
+                    ? 'bg-gradient-to-r from-rose-950/40 to-slate-900 text-rose-400 shadow-md border-rose-500/50'
+                    : 'bg-rose-500/5 text-rose-300 hover:text-white hover:bg-rose-500/10'
+                }`}
+              >
+                <User className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                <span>{t('cabin', 'nav')}</span>
+                <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse" />
+              </button>
+            )}
+
             <button
               onClick={() => setActiveSection('rent')}
               id="nav-tab-rent"
-              className={`px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-semibold tracking-wide transition-all shrink-0 whitespace-nowrap ${
+              className={`px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs font-bold tracking-wide transition-all flex items-center gap-2 relative border shrink-0 whitespace-nowrap group shadow-lg ${
                 activeSection === 'rent'
-                  ? 'bg-white/10 text-white shadow-inner font-bold'
-                  : 'text-slate-400 hover:text-white hover:bg-white/5'
+                  ? 'bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-slate-950 border-amber-300 shadow-amber-500/30 font-black scale-[1.03]'
+                  : 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 hover:text-amber-100 border-amber-500/40 hover:border-amber-400/70 shadow-amber-500/10'
               }`}
             >
-              {t('rent', 'nav')}
+              <Ship className={`w-4 h-4 shrink-0 transition-transform ${activeSection === 'rent' ? 'text-slate-950' : 'text-amber-400 group-hover:scale-110'}`} />
+              <span>{t('rent', 'nav')}</span>
+              <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded-md font-extrabold uppercase border ${
+                activeSection === 'rent' 
+                  ? 'bg-slate-950/90 text-amber-300 border-amber-300/60' 
+                  : 'bg-amber-400/20 text-amber-300 border-amber-400/30'
+              }`}>
+                FLEET
+              </span>
+            </button>
+
+            {/* Hidden / Tucked Tray Buttons: Hydromet Center & Radar */}
+            <button
+              type="button"
+              onClick={() => setIsHydrometModalOpen(true)}
+              id="nav-tray-btn-hydromet"
+              className="px-3 py-1.5 sm:py-2 rounded-xl text-xs font-semibold tracking-wide transition-all flex items-center gap-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0 shadow-md group hover:scale-105"
+              title={
+                lang === 'ru' ? 'Открыть Гидрометцентр' :
+                lang === 'zh' ? '打开气象水文中心' :
+                lang === 'ja' ? '気象水文学センターを開く' :
+                lang === 'ko' ? '기상 수문 센터 열기' :
+                'Open Hydromet Center'
+              }
+            >
+              <CloudSun className="w-3.5 h-3.5 text-amber-400 group-hover:rotate-12 transition-transform shrink-0" />
+              <span>
+                {lang === 'ru' ? 'Гидрометцентр' :
+                 lang === 'zh' ? '气象水文中心' :
+                 lang === 'ja' ? '気象水文' :
+                 lang === 'ko' ? '기상수문' :
+                 'Hydromet Center'}
+              </span>
+              <span className="text-[10px] font-mono px-1.5 py-0.5 bg-amber-400/20 text-amber-300 rounded-md font-bold">
+                {weather.windSpeed}{lang === 'ru' ? 'м/с' : 'm/s'}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsRadarModalOpen(true)}
+              id="nav-tray-btn-radar"
+              className="px-3 py-1.5 sm:py-2 rounded-xl text-xs font-semibold tracking-wide transition-all flex items-center gap-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shrink-0 shadow-md group hover:scale-105"
+              title={
+                lang === 'ru' ? 'Открыть Интерактивный радар' :
+                lang === 'zh' ? '打开互动雷达' :
+                lang === 'ja' ? 'インタラクティブレーダーを開く' :
+                lang === 'ko' ? '대화형 레이ダー 열기' :
+                'Open Interactive Radar'
+              }
+            >
+              <Radio className="w-3.5 h-3.5 text-cyan-400 animate-pulse shrink-0" />
+              <span>
+                {lang === 'ru' ? 'Интерактивный радар' :
+                 lang === 'zh' ? '互动雷达' :
+                 lang === 'ja' ? 'レーダー' :
+                 lang === 'ko' ? '대화형 레이더' :
+                 'Interactive Radar'}
+              </span>
+              <span className="text-[10px] font-mono px-1.5 py-0.5 bg-cyan-400/20 text-cyan-300 rounded-md font-bold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                34 {lang === 'ru' ? 'в эфире' : lang === 'zh' ? '在线' : 'live'}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsSelfHostingModalOpen(true)}
+              id="nav-tray-btn-selfhosting"
+              className="px-3 py-1.5 sm:py-2 rounded-xl text-xs font-semibold tracking-wide transition-all flex items-center gap-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0 shadow-md group hover:scale-105 font-mono"
+              title={lang === 'ru' ? 'Центр автономного развёртывания (Self-Hosting & Cloud Migration)' : 'Self-Hosting & Cloud Migration'}
+            >
+              <Server className="w-3.5 h-3.5 text-emerald-400 group-hover:rotate-6 transition-transform shrink-0" />
+              <span>
+                {lang === 'ru' ? 'Self-Hosting' : 'Bare-Metal'}
+              </span>
+              <span className="text-[10px] px-1.5 py-0.5 bg-emerald-400/20 text-emerald-300 rounded-md font-bold uppercase">
+                Ready
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsTelegramModalOpen(true)}
+              id="nav-tray-btn-telegram"
+              className="px-3 py-1.5 sm:py-2 rounded-xl text-xs font-semibold tracking-wide transition-all flex items-center gap-1.5 bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border border-sky-500/30 shrink-0 shadow-md group hover:scale-105 font-mono"
+              title={lang === 'ru' ? 'Интеграция Telegram Mini App & Bot' : 'Telegram Mini App & Bot Hub'}
+            >
+              <Send className="w-3.5 h-3.5 text-sky-400 group-hover:rotate-[-12deg] transition-transform shrink-0" />
+              <span>
+                Telegram App
+              </span>
+              <span className="text-[10px] px-1.5 py-0.5 bg-sky-400/20 text-sky-300 rounded-md font-bold uppercase">
+                Bot
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsWeChatModalOpen(true)}
+              id="nav-tray-btn-wechat"
+              className="px-3 py-1.5 sm:py-2 rounded-xl text-xs font-semibold tracking-wide transition-all flex items-center gap-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0 shadow-md group hover:scale-105 font-mono"
+              title={lang === 'ru' ? 'Интеграция WeChat Mini App & WeChat Pay' : 'WeChat Mini App & WeChat Pay Hub'}
+            >
+              <MessageSquare className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <span>
+                WeChat App
+              </span>
+              <span className="text-[10px] px-1.5 py-0.5 bg-emerald-400/20 text-emerald-300 rounded-md font-bold uppercase">
+                微信
+              </span>
             </button>
 
             <button
@@ -529,50 +731,6 @@ function AppContent() {
               <Compass className="w-3.5 h-3.5 text-amber-400 animate-pulse shrink-0" />
               <span>{t('captain_hub', 'nav')}</span>
             </button>
-
-            {authRole === 'partner' ? (
-              <button
-                onClick={() => setActiveSection('partner')}
-                id="nav-tab-partner"
-                className={`px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold tracking-wide transition-all flex items-center gap-1.5 relative border border-amber-500/30 shrink-0 whitespace-nowrap ${
-                  activeSection === 'partner'
-                    ? 'bg-gradient-to-r from-amber-950/40 to-slate-900 text-amber-400 shadow-md border-amber-500/60'
-                    : 'bg-amber-500/10 text-amber-300 hover:text-white hover:bg-amber-500/20'
-                }`}
-              >
-                <Building2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                <span>{lang === 'ru' ? 'Мостик Партнёра' : lang === 'zh' || lang === 'zh-TW' ? '合作伙伴中心' : 'Partner Hub'}</span>
-                <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-amber-400 rounded-full animate-ping" />
-              </button>
-            ) : authRole === 'captain' ? (
-              <button
-                onClick={() => setActiveSection('captain')}
-                id="nav-tab-captain"
-                className={`px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold tracking-wide transition-all flex items-center gap-1.5 relative border border-cyan-500/20 shrink-0 whitespace-nowrap ${
-                  activeSection === 'captain'
-                    ? 'bg-gradient-to-r from-cyan-950/40 to-slate-900 text-cyan-400 shadow-md border-cyan-500/50'
-                    : 'bg-cyan-500/5 text-cyan-300 hover:text-white hover:bg-cyan-500/10'
-                }`}
-              >
-                <Anchor className="w-3.5 h-3.5 text-cyan-400 animate-pulse shrink-0" />
-                <span>{t('bridge', 'nav')}</span>
-                <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-amber-500 rounded-full animate-ping" />
-              </button>
-            ) : (
-              <button
-                onClick={() => setActiveSection('cabin')}
-                id="nav-tab-cabin"
-                className={`px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold tracking-wide transition-all flex items-center gap-1.5 relative border border-rose-500/20 shrink-0 whitespace-nowrap ${
-                  activeSection === 'cabin'
-                    ? 'bg-gradient-to-r from-rose-950/40 to-slate-900 text-rose-400 shadow-md border-rose-500/50'
-                    : 'bg-rose-500/5 text-rose-300 hover:text-white hover:bg-rose-500/10'
-                }`}
-              >
-                <User className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-                <span>{t('cabin', 'nav')}</span>
-                <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse" />
-              </button>
-            )}
           </nav>
 
           {/* Right Utility Controls for Desktop (xl screens) */}
@@ -657,9 +815,14 @@ function AppContent() {
           <button
             onClick={() => setActiveSection('rent')}
             id="mob-nav-rent"
-            className={`flex-1 min-w-fit px-3 py-2 text-[10px] font-bold text-center rounded-lg transition-all whitespace-nowrap shrink-0 ${activeSection === 'rent' ? 'bg-cyan-500/10 text-cyan-400' : 'text-slate-400'}`}
+            className={`flex-1 min-w-fit px-3 py-2 text-[10px] font-bold text-center rounded-lg transition-all whitespace-nowrap shrink-0 flex items-center justify-center gap-1.5 ${
+              activeSection === 'rent'
+                ? 'bg-amber-400 text-slate-950 font-extrabold shadow-md shadow-amber-500/20'
+                : 'bg-amber-500/10 text-amber-300 border border-amber-500/30'
+            }`}
           >
-            {lang === 'ru' ? 'Аренда' : lang === 'en' ? 'Rental' : '租赁'}
+            <Ship className="w-3.5 h-3.5 shrink-0" />
+            <span>{lang === 'ru' ? 'Аренда флота' : lang === 'en' ? 'Fleet Charter' : '舰队租赁'}</span>
           </button>
           <button
             onClick={() => setActiveSection('shared')}
@@ -729,8 +892,52 @@ function AppContent() {
 
         {/* SECTION 1: Standard Fleet Rentals & Maps search (Default tab) */}
         {activeSection === 'rent' && (
-          <div className="space-y-8" id="rentals-dashboard-view">
+          <div className="space-y-12" id="rentals-dashboard-view">
             
+            {/* Visual Design Hero Section, Weather Ticker & Vintage Routes Map */}
+            <FarvaterHeroSection
+              weather={weather}
+              onSelectVesselsTab={() => {
+                const el = document.getElementById('fleet-catalog-section');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
+              onSelectRoutesTab={() => {
+                const el = document.getElementById('sea-map-and-filters-container') || document.getElementById('fleet-catalog-section');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
+              onBookClick={(vesselId) => {
+                if (vesselId) {
+                  const v = vessels.find(x => x.id === vesselId);
+                  if (v) setBookingVessel(v);
+                } else if (vessels.length > 0) {
+                  setBookingVessel(vessels[0]);
+                }
+              }}
+              vesselsCount={vessels.length}
+              selectedRouteId={selectedRouteId}
+              onSelectRoute={(routeId) => setSelectedRouteId(routeId)}
+            />
+
+            {/* SECTION — 01 / FLEET HEADER */}
+            <div className="pt-6 border-t border-white/10" id="fleet-catalog-section">
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+                <div>
+                  <div className="flex items-center gap-2 font-mono text-xs text-amber-400 uppercase tracking-widest mb-1">
+                    <span>— 01</span>
+                    <span>/</span>
+                    <span>ФЛОТ</span>
+                  </div>
+                  <h2 className="text-3xl sm:text-5xl font-normal text-white tracking-tight">
+                    Каждое судно — <span className="font-editorial-italic text-amber-400 text-4xl sm:text-6xl font-normal">со своим характером.</span>
+                  </h2>
+                </div>
+                <div className="flex items-center gap-2 text-xs font-mono text-amber-300 bg-amber-400/10 px-4 py-2 rounded-full border border-amber-400/20 w-fit">
+                  <span>ДОСТУПНО СУДОВ:</span>
+                  <span className="font-bold text-amber-400">{filteredVessels.length} из {vessels.length}</span>
+                </div>
+              </div>
+            </div>
+
             {/* Split Grid: Left filters / Right Radar map */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
               
@@ -938,110 +1145,63 @@ function AppContent() {
                     </div>
                   </div>
 
+                  {/* Quick Tucked Tools Launchers */}
+                  <div className="pt-3 border-t border-white/5 space-y-2">
+                    <label className="text-[10px] uppercase font-mono tracking-wider text-slate-400 block">
+                      {lang === 'ru' ? 'Быстрый доступ к навигации' :
+                       lang === 'zh' ? '快捷导航工具' :
+                       lang === 'ja' ? 'クイックナビゲーション' :
+                       lang === 'ko' ? '빠른 탐색 도구' :
+                       'Quick Navigation Tools'}
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsHydrometModalOpen(true)}
+                        id="filter-btn-hydromet"
+                        className="p-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-semibold flex items-center justify-between group transition-all"
+                      >
+                        <span className="flex items-center gap-1.5">
+                          <CloudSun className="w-4 h-4 text-amber-400 group-hover:rotate-12 transition-transform shrink-0" />
+                          <span>
+                            {lang === 'ru' ? 'Гидромет' :
+                             lang === 'zh' ? '气象水文' :
+                             lang === 'ja' ? '気象' :
+                             lang === 'ko' ? '기상' :
+                             'Hydromet'}
+                          </span>
+                        </span>
+                        <span className="text-[9px] font-mono bg-amber-400/20 px-1.5 py-0.5 rounded text-amber-300 font-bold">LIVE</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setIsRadarModalOpen(true)}
+                        id="filter-btn-radar"
+                        className="p-2.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 text-xs font-semibold flex items-center justify-between group transition-all"
+                      >
+                        <span className="flex items-center gap-1.5">
+                          <Radio className="w-4 h-4 text-cyan-400 animate-pulse shrink-0" />
+                          <span>
+                            {lang === 'ru' ? 'Радар' :
+                             lang === 'zh' ? '雷达' :
+                             lang === 'ja' ? 'レーダー' :
+                             lang === 'ko' ? '레이더' :
+                             'Radar'}
+                          </span>
+                        </span>
+                        <span className="text-[9px] font-mono bg-cyan-400/20 px-1.5 py-0.5 rounded text-cyan-300 font-bold">MAP</span>
+                      </button>
+                    </div>
+                  </div>
+
                 </div>
 
-                {/* Weather widget insertion */}
-                <WeatherWidget 
-                  currentWeather={weather} 
-                  onWeatherChange={(w) => {
-                    setWeather(w);
-                    setSelectedVesselForMap(null); // reset focus
-                  }}
-                />
-
-
-
-              </div>
-
-              {/* Right Column: Custom Interactive radar marine map (Span 7) */}
-              <div className="lg:col-span-7 space-y-6">
-                <InteractiveSeaMap 
-                  vessels={filteredVessels}
-                  selectedVessel={selectedVesselForMap}
-                  onSelectVessel={setSelectedVesselForMap}
-                  weatherStatus={weather.status}
-                  routePoints={customRoutePoints}
-                  pickupPoint={customPickupPoint}
-                  onRouteDraw={setCustomRoutePoints}
-                  onMapClick={(lat, lon) => {
-                    setCustomPickupPoint({
-                      latLon: [lat, lon],
-                      type: 'pickup'
-                    });
-                  }}
-                />
-
-                <MapToolsPanel
-                  currentRoutePoints={customRoutePoints}
-                  onSetCustomRoute={setCustomRoutePoints}
-                  currentPickupPoint={customPickupPoint}
-                  onSetPickupPoint={setCustomPickupPoint}
-                  selectedVessel={selectedVesselForMap}
-                  triggerToast={(msg) => {
-                    setCouponNotification(msg);
-                    setTimeout(() => setCouponNotification(null), 6000);
-                  }}
-                />
               </div>
 
             </div>
 
-            {/* Dynamic Active Partner Campaigns Banner Bar */}
-            {partnerCampaigns.filter(c => c.status === 'active').length > 0 && (
-              <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-900 via-cyan-950/40 to-slate-900 border border-cyan-500/30 space-y-3 shadow-xl">
-                <div className="flex items-center justify-between border-b border-white/5 pb-2">
-                  <div className="flex items-center gap-2">
-                    <Megaphone className="w-4 h-4 text-cyan-400 animate-bounce" />
-                    <span className="text-xs font-bold text-white font-mono uppercase tracking-wider">
-                      {lang === 'ru' ? '📢 Официальные спецпредложения партнёров JIV' : '📢 Official Partner Special Offers'}
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => setActiveSection('partner')}
-                    className="text-[10px] text-cyan-400 hover:underline font-mono flex items-center gap-1"
-                  >
-                    <span>{lang === 'ru' ? 'Мостик Партнёра →' : 'Partner Bridge →'}</span>
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {partnerCampaigns.filter(c => c.status === 'active').map((campaign) => (
-                    <div 
-                      key={campaign.id}
-                      className="p-3.5 rounded-xl bg-slate-950/80 border border-white/10 flex flex-col justify-between space-y-2.5 relative group hover:border-cyan-500/40 transition-all"
-                    >
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-amber-300 font-mono">{campaign.name}</span>
-                          <span className="text-[9px] text-slate-500 font-mono bg-slate-900 px-1.5 py-0.5 rounded border border-white/5">
-                            {campaign.erid}
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-200 leading-snug">
-                          {campaign.bannerText || campaign.name}
-                        </p>
-                      </div>
-
-                      {campaign.promoCode && (
-                        <div className="flex items-center justify-between pt-1 border-t border-white/5">
-                          <span className="text-[10px] text-slate-400 font-mono">
-                            {lang === 'ru' ? 'Промокод:' : 'Promo code:'} <strong className="text-cyan-400 font-mono">{campaign.promoCode}</strong>
-                          </span>
-                          <button
-                            onClick={() => handleApplyQuickPromo(campaign.promoCode || 'JIV2026')}
-                            className="px-3 py-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 text-[10px] font-bold font-mono transition-all flex items-center gap-1"
-                          >
-                            <Sparkles className="w-3 h-3 text-cyan-400" />
-                            <span>{lang === 'ru' ? 'Применить скидку' : 'Apply Discount'}</span>
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
+            {/* Partner Cards Grid */}
             <SponsorsGrid onApplyPromo={handleApplyQuickPromo} />
 
             {/* Instant Sea Taxi Calling Panel (Prompt #5 requirement: Морское такси 24/7) */}
@@ -1298,6 +1458,12 @@ function AppContent() {
             setBookings={setBookings}
             reviews={reviews}
             setReviews={setReviews}
+            activeRole={authRole}
+            onRoleChange={(newRole) => {
+              setAuthRole(newRole);
+              setActiveSection(newRole === 'captain' ? 'captain' : newRole === 'partner' ? 'partner' : 'cabin');
+            }}
+            onNavigateSection={setActiveSection}
           />
         )}
 
@@ -1313,7 +1479,12 @@ function AppContent() {
               currentRoutePoints={customRoutePoints}
               currentPickupPoint={customPickupPoint}
               activeRole={authRole}
-              onRoleChange={setAuthRole}
+              onRoleChange={(newRole) => {
+                setAuthRole(newRole);
+                if (activeSection === 'cabin' || activeSection === 'captain' || activeSection === 'partner') {
+                  setActiveSection(newRole === 'captain' ? 'captain' : newRole === 'partner' ? 'partner' : 'cabin');
+                }
+              }}
             />
           </div>
         )}
@@ -1487,6 +1658,183 @@ function AppContent() {
         </div>
       )}
 
+      {/* ==========================================
+          TUCKED TRAY MODALS: HYDROMET CENTER & RADAR
+         ========================================== */}
+      
+      {/* 1. Hydromet Center Overlay Modal */}
+      {isHydrometModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-xl flex items-center justify-center p-4 sm:p-6 overflow-y-auto animate-in fade-in duration-200" id="hydromet-modal">
+          <div className="relative max-w-4xl w-full bg-slate-900/95 border border-amber-500/30 rounded-3xl p-5 sm:p-6 space-y-5 shadow-2xl my-auto">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-2xl bg-amber-400/10 border border-amber-400/20 text-amber-400">
+                  <CloudSun className="w-6 h-6 animate-pulse" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white font-sans flex items-center gap-2">
+                    <span>
+                      {lang === 'ru' ? 'Гидрометцентр Владивостока' :
+                       lang === 'zh' ? '符拉迪沃斯托克气象水文中心' :
+                       lang === 'ja' ? 'ウラジオストク気象水文学センター' :
+                       lang === 'ko' ? '블라디보스토크 기상 수문 센터' :
+                       'Vladivostok Hydromet Center'}
+                    </span>
+                    <span className="text-[10px] font-mono font-bold bg-amber-400/20 text-amber-300 px-2.5 py-0.5 rounded-full border border-amber-400/30">
+                      LIVE METEO
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-400 font-mono">
+                    {lang === 'ru' ? 'Залив Петра Великого • Прогноз погоды и волнения моря' :
+                     lang === 'zh' ? '彼得大帝湾 • 天气与海浪预报' :
+                     lang === 'ja' ? 'ピョートル大帝湾 • 天気・波浪予報' :
+                     lang === 'ko' ? '표트르 대제 만 • 날씨 및 파도 예보' :
+                     'Peter the Great Gulf • Weather & Sea Wave Forecast'}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setIsHydrometModalOpen(false)}
+                className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all font-mono text-xs flex items-center gap-1.5 shrink-0"
+                id="btn-close-hydromet-modal"
+              >
+                <X className="w-5 h-5" />
+                <span className="hidden sm:inline">
+                  {lang === 'ru' ? 'Закрыть ✖' :
+                   lang === 'zh' ? '关闭 ✖' :
+                   lang === 'ja' ? '閉じる ✖' :
+                   lang === 'ko' ? '닫기 ✖' :
+                   'Close ✖'}
+                </span>
+              </button>
+            </div>
+
+            {/* Modal Content: Weather Widget */}
+            <div className="pt-1">
+              <WeatherWidget 
+                currentWeather={weather} 
+                onWeatherChange={(w) => {
+                  setWeather(w);
+                  setSelectedVesselForMap(null);
+                }}
+                onOpenFullRadarMap={() => setIsRadarModalOpen(true)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 2. Interactive Radar Overlay Modal */}
+      {isRadarModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-xl flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-200" id="radar-modal">
+          <div className="relative max-w-6xl w-full bg-slate-900/95 border border-cyan-500/30 rounded-3xl p-4 sm:p-6 space-y-4 shadow-2xl my-auto max-h-[92vh] flex flex-col justify-between">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-white/10 pb-3 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-2xl bg-cyan-400/10 border border-cyan-400/20 text-cyan-400">
+                  <Radio className="w-6 h-6 animate-pulse" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white font-sans flex items-center gap-2">
+                    <span>
+                      {lang === 'ru' ? 'Интерактивный радар фарватера' :
+                       lang === 'zh' ? '航道互动雷达' :
+                       lang === 'ja' ? '航路インタラクティブレーダー' :
+                       lang === 'ko' ? '항로 대화형 레이더' :
+                       'Interactive Fairway Radar'}
+                    </span>
+                    <span className="text-[10px] font-mono font-bold bg-cyan-400/20 text-cyan-300 px-2.5 py-0.5 rounded-full border border-cyan-400/30 flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                      {lang === 'ru' ? '34 СУДНА В ЭФИРЕ' :
+                       lang === 'zh' ? '34 艘船只在线' :
+                       lang === 'ja' ? '34 隻ライブ' :
+                       lang === 'ko' ? '34 척 실시간' :
+                       '34 VESSELS LIVE'}
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-400 font-mono">
+                    {lang === 'ru' ? 'Морская карта, AIS-трекинг, прокладка маршрутов и точка подачи' :
+                     lang === 'zh' ? '海图、AIS 追踪、路线规划与接送点' :
+                     lang === 'ja' ? '海図、AIS トラッキング、ルート作成、乗船ポイント' :
+                     lang === 'ko' ? '해도, AIS 추적, 경로 계획 및 탑승 지점' :
+                     'Nautical chart, AIS tracking, route planning & pickup point'}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setIsRadarModalOpen(false)}
+                className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all font-mono text-xs flex items-center gap-1.5 shrink-0"
+                id="btn-close-radar-modal"
+              >
+                <X className="w-5 h-5" />
+                <span className="hidden sm:inline">
+                  {lang === 'ru' ? 'Закрыть ✖' :
+                   lang === 'zh' ? '关闭 ✖' :
+                   lang === 'ja' ? '閉じる ✖' :
+                   lang === 'ko' ? '닫기 ✖' :
+                   'Close ✖'}
+                </span>
+              </button>
+            </div>
+
+            {/* Modal Content: Interactive Sea Map & Tools */}
+            <div className="overflow-y-auto space-y-4 pr-1 grow">
+              <InteractiveSeaMap 
+                vessels={filteredVessels}
+                selectedVessel={selectedVesselForMap}
+                onSelectVessel={setSelectedVesselForMap}
+                weatherStatus={weather.status}
+                routePoints={customRoutePoints}
+                pickupPoint={customPickupPoint}
+                onRouteDraw={setCustomRoutePoints}
+                onMapClick={(lat, lon) => {
+                  setCustomPickupPoint({
+                    latLon: [lat, lon],
+                    type: 'pickup'
+                  });
+                }}
+              />
+
+              <MapToolsPanel
+                currentRoutePoints={customRoutePoints}
+                onSetCustomRoute={setCustomRoutePoints}
+                currentPickupPoint={customPickupPoint}
+                onSetPickupPoint={setCustomPickupPoint}
+                selectedVessel={selectedVesselForMap}
+                triggerToast={(msg) => {
+                  setCouponNotification(msg);
+                  setTimeout(() => setCouponNotification(null), 6000);
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 3. Self-Hosting & Cloud Migration Control Panel Modal */}
+      <SelfHostingModal
+        isOpen={isSelfHostingModalOpen}
+        onClose={() => setIsSelfHostingModalOpen(false)}
+        lang={lang}
+      />
+
+      {/* 4. Telegram Mini App & Bot Control Hub Modal */}
+      <TelegramHubModal
+        isOpen={isTelegramModalOpen}
+        onClose={() => setIsTelegramModalOpen(false)}
+        lang={lang}
+      />
+
+      {/* 5. WeChat Mini App & WeChat Pay Control Hub Modal */}
+      <WeChatHubModal
+        isOpen={isWeChatModalOpen}
+        onClose={() => setIsWeChatModalOpen(false)}
+        lang={lang}
+      />
+
       {/* Decorative Elegant Footer with subtle brand mentions */}
       <footer className="relative z-10 border-t border-white/5 bg-slate-950/80 py-8 text-center text-xs text-slate-500 space-y-2" id="main-app-footer">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4">
@@ -1494,7 +1842,28 @@ function AppContent() {
             <Anchor className="w-4 h-4 text-cyan-400" />
             <span className="font-mono text-slate-400">ФАРВАТЕР © 2026 — Акватория Владивостока</span>
           </div>
-          <div className="flex gap-4 text-[11px]">
+          <div className="flex items-center gap-4 text-[11px]">
+            <button
+              onClick={() => setIsTelegramModalOpen(true)}
+              className="text-sky-400/90 hover:text-sky-300 transition-colors font-mono flex items-center gap-1 underline underline-offset-2"
+            >
+              <Send className="w-3 h-3 text-sky-400 rotate-[-12deg]" />
+              <span>Telegram Bot & Mini App</span>
+            </button>
+            <button
+              onClick={() => setIsWeChatModalOpen(true)}
+              className="text-emerald-400/90 hover:text-emerald-300 transition-colors font-mono flex items-center gap-1 underline underline-offset-2"
+            >
+              <MessageSquare className="w-3 h-3 text-emerald-400" />
+              <span>WeChat Mini App (微信)</span>
+            </button>
+            <button
+              onClick={() => setIsSelfHostingModalOpen(true)}
+              className="text-cyan-400/80 hover:text-cyan-300 transition-colors font-mono flex items-center gap-1 underline underline-offset-2"
+            >
+              <Server className="w-3 h-3 text-emerald-400" />
+              <span>{lang === 'ru' ? 'Self-Hosting Hub' : 'Self-Hosting Hub'}</span>
+            </button>
             <span className="text-slate-600">Система предупреждения акул Shark Shield™</span>
             <span className="text-slate-600">Поиск по заливу Петра Великого</span>
           </div>

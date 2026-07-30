@@ -639,12 +639,16 @@ export default function PartnerBridge({
         <div className="p-5 rounded-xl bg-slate-900/80 border border-white/10 space-y-4 animate-fade-in">
           <h3 className="text-sm font-bold text-white flex items-center gap-2">
             <CreditCard className="w-4 h-4 text-cyan-400" />
-            <span>{lang === 'ru' ? 'Пополнение рекламного баланса и счета' : 'Payment & Ad Budget Top-Up'}</span>
+            <span>{lang === 'ru' ? 'Рекламный баланс и грант запуска' : 'Ad Budget & Launch Grant'}</span>
           </h3>
+
+          <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-mono font-bold flex items-center gap-2">
+            <span>🎁 <strong>Бесплатный период запуска:</strong> Все рекламные форматы и интеграции предоставляются партнерам бесплатно.</span>
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono">
             <div className="space-y-2">
-              <label className="text-slate-400 block">Сумма пополнения:</label>
+              <label className="text-slate-400 block">Начислить бонусный баланс (₽):</label>
               <div className="flex gap-2">
                 <input
                   type="number"
@@ -654,9 +658,9 @@ export default function PartnerBridge({
                 />
                 <button
                   onClick={handleDeposit}
-                  className="px-4 py-2.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold shrink-0"
+                  className="px-4 py-2.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold shrink-0"
                 >
-                  {lang === 'ru' ? 'Оплатить' : 'Pay'}
+                  {lang === 'ru' ? 'Активировать грант' : 'Claim Grant'}
                 </button>
               </div>
             </div>

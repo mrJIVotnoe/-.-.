@@ -1,0 +1,19 @@
+[Unit]
+Description=JIV Fleet Vladivostok Platform Service
+After=network.target docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/jiv-vladivostok-fleet
+ExecStart=/usr/bin/docker compose up --build
+ExecStop=/usr/bin/docker compose down
+Restart=always
+RestartSec=10s
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=jiv-fleet
+
+[Install]
+WantedBy=multi-user.target

@@ -30,7 +30,9 @@ export const VESSELS_DATA: Vessel[] = [
     hasSharkRepeller: true,
     allowedActivities: ['VIP-круизы', 'Праздники', 'Купание в море', 'Обзорные экскурсии'],
     isLive: true,
-    responseTime: 14
+    responseTime: 14,
+    isCaptainVerified: true,
+    verifiedQualification: true
   },
   {
     id: 'nika-yacht',

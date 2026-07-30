@@ -32,6 +32,8 @@ export interface Vessel {
   responseTime?: number; // Average response speed in seconds
   isTopPromoted?: boolean; // Promoted in TOP-1 search
   promoBadge?: string; // e.g. "🔥 VIP TOP-1"
+  isCaptainVerified?: boolean; // Voluntary verification status "Подтверждённая квалификация"
+  verifiedQualification?: boolean; // Verified badge
 }
 
 export interface AdCampaign {

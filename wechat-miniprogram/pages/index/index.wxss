@@ -1,0 +1,13 @@
+/* JIV Fleet WeChat Mini App Styles */
+page {
+  background-color: #020617;
+  width: 100%;
+  height: 100%;
+}
+
+.container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}

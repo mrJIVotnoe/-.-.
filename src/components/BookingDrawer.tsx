@@ -832,10 +832,10 @@ export default function BookingDrawer({
               </div>
               <p className="text-[10px] text-slate-500 text-center leading-relaxed font-sans">
                 {lang === 'ru'
-                  ? 'Нажимая «Забронировать», вы соглашаетесь с правилами безопасности на воде и публичной офертой аренды судна во Владивостоке. Предоплата не взимается на этапе прототипа.'
+                  ? 'Нажимая «Забронировать», вы соглашаетесь с правилами безопасности на воде. На этапе запуска сервисный сбор платформы составляет 0%. Оплата происходит напрямую капитану на борту.'
                   : lang === 'en'
-                  ? 'By clicking "Book Now", you agree to the water safety regulations and public charter offer in Vladivostok. No pre-payment is required at this prototype stage.'
-                  : '点击“立即预约”，即表示您同意海参崴海上安全法规以及公开船舶租赁要约。原型演示阶段无需支付预付款。'}
+                  ? 'By clicking "Book Now", you agree to the water safety regulations. During the launch phase, platform fee is 0%. Payment is made directly to the captain on board.'
+                  : '点击“立即预约”，即表示您同意海参崴海上安全法规。上线初期平台服务费为 0%，费用将在登船时直接支付给船长。'}
               </p>
             </div>
 
