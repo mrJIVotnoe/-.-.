@@ -6,8 +6,8 @@ import crypto from 'crypto';
 
 dotenv.config();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const currentFilename = typeof __filename !== 'undefined' ? __filename : (typeof import.meta !== 'undefined' && import.meta.url ? fileURLToPath(import.meta.url) : '');
+const currentDirname = currentFilename ? path.dirname(currentFilename) : process.cwd();
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '3000', 10);
@@ -71,24 +71,6 @@ app.get('/api/v1/export-data', (req, res) => {
   });
 });
 
-// 2. Backup & Export endpoint for seamless cloud migration
-app.get('/api/v1/export-data', (req, res) => {
-  res.json({
-    exportedAt: new Date().toISOString(),
-    schemaVersion: '1.0',
-    platform: 'JIV Fleet Vladivostok',
-    data: {
-      systemConfig: {
-        launchPhase: true,
-        commissionRate: 0,
-        currency: 'RUB',
-        supportedLangs: ['ru', 'en', 'zh', 'zh-TW']
-      },
-      message: 'System data exported successfully for cloud migration.'
-    }
-  });
-});
-
 // ========================================================
 // 3. Digital Asset Links & Android PWA Endpoints
 // ========================================================
@@ -96,7 +78,7 @@ app.get('/api/v1/export-data', (req, res) => {
 // Explicit handler for /.well-known/assetlinks.json required for Android TWA
 app.get('/.well-known/assetlinks.json', (req, res) => {
   res.setHeader('Content-Type', 'application/json');
-  res.sendFile(path.join(__dirname, 'public', '.well-known', 'assetlinks.json'));
+  res.sendFile(path.join(currentDirname, 'public', '.well-known', 'assetlinks.json'));
 });
 
 // Android PWA configuration status endpoint
