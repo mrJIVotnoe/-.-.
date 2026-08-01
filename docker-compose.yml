@@ -12,10 +12,21 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
+      - APP_MODE=${APP_MODE:-local}
       - PORT=3000
       - HOST=0.0.0.0
       - APP_URL=${APP_URL:-http://localhost:3000}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME:-JivVladivostokFleetBot}
+      - TELEGRAM_WEBHOOK_URL=${TELEGRAM_WEBHOOK_URL}
+      - WECHAT_APP_ID=${WECHAT_APP_ID}
+      - WECHAT_APP_SECRET=${WECHAT_APP_SECRET}
+      - WECHAT_MCH_ID=${WECHAT_MCH_ID}
+      - WECHAT_TOKEN=${WECHAT_TOKEN}
+      - YANDEX_CLIENT_ID=${YANDEX_CLIENT_ID}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - APPLE_CLIENT_ID=${APPLE_CLIENT_ID}
       - DATABASE_URL=${DATABASE_URL:-postgresql://jiv_admin:jiv_fleet_secret_2026@db:5432/jiv_fleet_db}
       - REDIS_URL=${REDIS_URL:-redis://redis:6379}
       - CLOUD_PROVIDER=Bare-Metal / Self-Hosted

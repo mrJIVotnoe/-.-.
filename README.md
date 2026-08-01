@@ -99,7 +99,10 @@ npm install
 ```env
 # Серверные конфигурации
 NODE_ENV=development
+APP_MODE=demo # demo | local | staging | production
+HOST=0.0.0.0
 PORT=3000
+APP_URL=http://localhost:3000
 
 # ИИ Сервисы
 GEMINI_API_KEY=your_google_gemini_api_key
@@ -122,6 +125,17 @@ npm run build
 npm start
 ```
 
+### 6. Режимы запуска APP_MODE
+
+`APP_MODE` отделяет демонстрационные интеграции от будущего боевого контура:
+
+- `demo` — презентационный режим с sandbox/preview ответами для WeChat, Telegram, OAuth и OTP.
+- `local` — self-hosted запуск на собственном железе до подключения юрлица, домена и платежных провайдеров.
+- `staging` — проверка реальных ключей и callback URL перед запуском.
+- `production` — боевой режим: demo-коды, simulated WeChat Pay и sandbox-bypass должны быть отключены.
+
+Для первого локального пилота во Владивостоке рекомендуется `APP_MODE=local`, а для презентаций инвесторам и партнёрам — `APP_MODE=demo`.
+
 ---
 
 ## 🐳 Деплой на Собственном Сервере (Docker / Bare-Metal)
@@ -132,13 +146,19 @@ npm start
 # Dockerfile Example
 FROM node:20-alpine AS builder
 WORKDIR /app
-COPY package*.json ./
-RUN npm ci
+COPY package.json ./
+RUN npm install
 COPY . .
 RUN npm run build
 
 EXPOSE 3000
 CMD ["npm", "start"]
+```
+
+В репозитории также есть production-ready `Dockerfile` и `docker-compose.yml` для self-hosted запуска с PostgreSQL, Redis и Nginx. Для локального пилота используйте:
+
+```bash
+APP_MODE=local docker compose up --build
 ```
 
 ---
