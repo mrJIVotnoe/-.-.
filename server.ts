@@ -6,8 +6,9 @@ import crypto from 'crypto';
 
 dotenv.config();
 
-const currentFilename = typeof __filename !== 'undefined' ? __filename : (typeof import.meta !== 'undefined' && import.meta.url ? fileURLToPath(import.meta.url) : '');
-const currentDirname = currentFilename ? path.dirname(currentFilename) : process.cwd();
+const currentDirname = typeof __dirname !== 'undefined'
+  ? __dirname
+  : (typeof import.meta !== 'undefined' && import.meta && import.meta.url ? path.dirname(fileURLToPath(import.meta.url)) : process.cwd());
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '3000', 10);
@@ -53,23 +54,7 @@ app.get('/api/status', (req, res) => {
   });
 });
 
-// 2. Backup & Export endpoint for seamless cloud migration
-app.get('/api/v1/export-data', (req, res) => {
-  res.json({
-    exportedAt: new Date().toISOString(),
-    schemaVersion: '1.0',
-    platform: 'JIV Fleet Vladivostok',
-    data: {
-      systemConfig: {
-        launchPhase: true,
-        commissionRate: 0,
-        currency: 'RUB',
-        supportedLangs: ['ru', 'en', 'zh', 'zh-TW']
-      },
-      message: 'System data exported successfully for cloud migration.'
-    }
-  });
-});
+// Backup & Export endpoints are positioned after serverBookingsStore initialization for live data snapshotting.
 
 // ========================================================
 // 3. Digital Asset Links & Android PWA Endpoints
@@ -512,6 +497,78 @@ app.patch('/api/v1/bookings/:id', (req, res) => {
     status: 'success',
     message: `Booking ${id} updated`,
     booking: existing
+  });
+});
+
+// GET /api/v1/export-data — Full operational state snapshot for cloud migration / backup
+app.get('/api/v1/export-data', (req, res) => {
+  const bookingsArray = Array.from(serverBookingsStore.values());
+  
+  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Content-Disposition', 'attachment; filename="jiv_fleet_state_export.json"');
+  
+  res.json({
+    exportedAt: new Date().toISOString(),
+    schemaVersion: '1.0',
+    platform: 'JIV Fleet Vladivostok (ФАРВАТЕР)',
+    environment: {
+      appMode: process.env.APP_MODE || 'demo',
+      nodeEnv: process.env.NODE_ENV || 'development',
+      port: process.env.PORT || 3000,
+      databaseUrlConfigured: Boolean(process.env.DATABASE_URL)
+    },
+    systemConfig: {
+      launchPhase: true,
+      commissionRate: 0,
+      currency: 'RUB',
+      supportedLangs: ['ru', 'en', 'zh', 'zh-TW']
+    },
+    data: {
+      totalBookings: bookingsArray.length,
+      bookings: bookingsArray,
+      vesselFleetCount: 12,
+      exportMessage: 'Live system snapshot generated for self-hosted or cloud migration (Yandex.Cloud / SberCloud).'
+    }
+  });
+});
+
+// POST /api/v1/import-data — Restore platform state snapshot
+app.post('/api/v1/import-data', (req, res) => {
+  const { data } = req.body;
+  if (!data || !Array.isArray(data.bookings)) {
+    return res.status(400).json({ error: 'Invalid backup structure. "data.bookings" array required.' });
+  }
+
+  let importedCount = 0;
+  for (const item of data.bookings) {
+    if (item.id && item.vesselTitle) {
+      serverBookingsStore.set(item.id, item);
+      importedCount++;
+    }
+  }
+
+  res.json({
+    status: 'success',
+    message: `Imported ${importedCount} booking records successfully into server memory store.`,
+    totalBookingsNow: serverBookingsStore.size
+  });
+});
+
+// POST /api/v1/payments/sbp/create — Generate SBP (Система Быстрых Платежей) payment link & QR
+app.post('/api/v1/payments/sbp/create', (req, res) => {
+  const { bookingId, amount, customerName } = req.body;
+  const paymentId = `SBP-PAY-${Math.floor(100000 + Math.random() * 900000)}`;
+  
+  res.json({
+    status: 'success',
+    paymentId,
+    bookingId: bookingId || 'RENT-VL-9901',
+    amount: amount || 10000,
+    currency: 'RUB',
+    provider: 'СБП НСПК / Т-Банк / Сбер Эквайринг',
+    qrPayload: `https://qr.nspk.ru/${paymentId}?bank=100000000004&crc=B3F2`,
+    deeplink: `sbp://qr.nspk.ru/${paymentId}`,
+    expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString()
   });
 });
 

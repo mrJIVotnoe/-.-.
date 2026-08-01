@@ -41,6 +41,30 @@ export default function BookingDrawer({
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [createdBookingId, setCreatedBookingId] = useState('B-201');
+  const [sbpData, setSbpData] = useState<any>(null);
+  const [loadingSbp, setLoadingSbp] = useState(false);
+
+  const handleCreateSbpQr = async () => {
+    setLoadingSbp(true);
+    try {
+      const res = await fetch('/api/v1/payments/sbp/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bookingId: createdBookingId,
+          amount: calculateTotalPrice(),
+          customerName: name
+        })
+      });
+      const data = await res.json();
+      setSbpData(data);
+    } catch (err) {
+      console.error('Failed to create SBP QR:', err);
+    } finally {
+      setLoadingSbp(false);
+    }
+  };
   
   // Wishes about route and conditions
   const [wishesRoute, setWishesRoute] = useState('');
@@ -202,6 +226,7 @@ export default function BookingDrawer({
     if (!name || !phone) return;
 
     const bookingId = 'B-' + Math.floor(Math.random() * 900 + 100);
+    setCreatedBookingId(bookingId);
 
     const calculatedPrice = calculateTotalPrice();
 
@@ -330,6 +355,92 @@ export default function BookingDrawer({
             </div>
           )}
 
+          {submitted ? (
+            <div className="space-y-6 text-center py-4 animate-[fadeIn_0.3s_ease-out]">
+              <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/20">
+                <Check className="w-8 h-8" />
+              </div>
+
+              <div className="space-y-2">
+                <span className="text-[10px] font-mono tracking-widest text-emerald-400 uppercase bg-emerald-950/40 px-2.5 py-1 rounded border border-emerald-500/30">
+                  {lang === 'ru' ? 'Заявка отправлена капитану' : lang === 'en' ? 'Booking Sent to Captain' : '预订已发送给船长'}
+                </span>
+                <h3 className="text-xl font-bold text-white">
+                  {lang === 'ru' ? 'Бронирование успешно создано!' : lang === 'en' ? 'Booking Created Successfully!' : '预订已成功创建！'}
+                </h3>
+                <p className="text-xs text-slate-400 max-w-sm mx-auto font-sans">
+                  {lang === 'ru'
+                    ? `Номер вашего заказа #${createdBookingId}. Наш капитан свяжется с вами по номеру ${phone} для подтверждения деталей выхода.`
+                    : lang === 'en'
+                    ? `Your order ID is #${createdBookingId}. Our captain will contact you at ${phone} to confirm flight details.`
+                    : `您的订单号为 #${createdBookingId}。我们的船长将通过 ${phone} 联系您以确认航行细节。`}
+                </p>
+              </div>
+
+              {/* SBP Payment Terminal Section */}
+              <div className="p-4 rounded-2xl bg-slate-900 border border-white/10 text-left space-y-3 shadow-xl">
+                <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-mono text-[10px] font-bold">
+                      СБП / T-Bank / Сбер
+                    </span>
+                    <span className="text-xs text-slate-300 font-bold">
+                      {lang === 'ru' ? 'Безопасный аванс (СБП)' : lang === 'en' ? 'Secure Advance (SBP)' : 'SBP 预付款'}
+                    </span>
+                  </div>
+                  <span className="text-xs font-mono font-bold text-white">
+                    {calculateTotalPrice().toLocaleString()} ₽
+                  </span>
+                </div>
+
+                {!sbpData ? (
+                  <button
+                    type="button"
+                    onClick={handleCreateSbpQr}
+                    disabled={loadingSbp}
+                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/10"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    <span>{loadingSbp ? 'Генерация QR СБП...' : 'Сформировать QR СБП для предоплаты'}</span>
+                  </button>
+                ) : (
+                  <div className="space-y-3 pt-1 text-center">
+                    <div className="p-3 bg-white rounded-xl max-w-[180px] mx-auto shadow-inner border border-slate-300">
+                      <img 
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(sbpData.qrPayload)}`}
+                        alt="SBP QR Code"
+                        className="w-full h-auto rounded"
+                      />
+                    </div>
+                    <div className="space-y-1 text-center">
+                      <span className="text-[10px] font-mono text-emerald-400 font-bold block">
+                        ✅ QR-код СБП готов к оплате
+                      </span>
+                      <p className="text-[10px] text-slate-400 font-mono">
+                        {sbpData.provider} • ID: {sbpData.paymentId}
+                      </p>
+                      <a
+                        href={sbpData.deeplink}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-block mt-1 px-3 py-1.5 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 font-mono text-xs border border-cyan-500/40"
+                      >
+                        📱 Открыть в приложении банка (СБП)
+                      </a>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={onClose}
+                className="w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition-colors"
+              >
+                {lang === 'ru' ? 'Закрыть окно' : lang === 'en' ? 'Close Window' : '关闭窗口'}
+              </button>
+            </div>
+          ) : (
           <form onSubmit={handleSubmit} className="space-y-6">
             
             {/* 1. Date & Time Selection with 6-Month Horizon Availability */}
@@ -862,6 +973,7 @@ export default function BookingDrawer({
             </div>
 
           </form>
+          )}
         </div>
       </div>
     </div>

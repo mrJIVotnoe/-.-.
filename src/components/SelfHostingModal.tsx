@@ -17,7 +17,8 @@ import {
   CheckCircle2, 
   AlertCircle,
   FileText,
-  ExternalLink
+  ExternalLink,
+  Upload
 } from 'lucide-react';
 
 interface SelfHostingModalProps {
@@ -32,6 +33,33 @@ export default function SelfHostingModal({ isOpen, onClose, lang }: SelfHostingM
   const [healthData, setHealthData] = useState<any>(null);
   const [statusData, setStatusData] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [importStatus, setImportStatus] = useState<string | null>(null);
+
+  const handleFileImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setImportStatus('Чтение файла бэкапа...');
+      const text = await file.text();
+      const jsonData = JSON.parse(text);
+
+      const res = await fetch('/api/v1/import-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(jsonData)
+      });
+
+      const result = await res.json();
+      if (res.ok) {
+        setImportStatus(`✅ Успешно импортировано! ${result.message}`);
+      } else {
+        setImportStatus(`❌ Ошибка импорта: ${result.error || 'Неверный формат'}`);
+      }
+    } catch (err: any) {
+      setImportStatus(`❌ Ошибка разбора JSON: ${err?.message || 'Неверный файл'}`);
+    }
+  };
 
   const fetchHealthStatus = async () => {
     setLoading(true);
@@ -384,7 +412,7 @@ docker push "\${IMAGE_TAG}"`;
                 <span className="font-bold block text-indigo-300">💾 Экспорт состояния платформы и резервное копирование</span>
                 <p className="text-slate-300">Вы можете скачать текущее состояние и настройки платформы в формате JSON или запустить скрипт бэкапа PostgreSQL.</p>
                 
-                <div className="pt-1 flex flex-wrap gap-2">
+                <div className="pt-1 flex flex-wrap items-center gap-2">
                   <a
                     href="/api/v1/export-data"
                     target="_blank"
@@ -394,7 +422,24 @@ docker push "\${IMAGE_TAG}"`;
                     <Download className="w-4 h-4" />
                     <span>Скачать JSON Экспорт Данных</span>
                   </a>
+
+                  <label className="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-indigo-300 font-bold text-xs flex items-center gap-1.5 shadow cursor-pointer border border-indigo-500/30">
+                    <Upload className="w-4 h-4 text-indigo-400" />
+                    <span>Восстановить / Импорт JSON</span>
+                    <input 
+                      type="file" 
+                      accept=".json"
+                      onChange={handleFileImport}
+                      className="hidden"
+                    />
+                  </label>
                 </div>
+
+                {importStatus && (
+                  <div className="mt-2 p-2.5 rounded bg-black/60 border border-indigo-500/30 text-xs font-mono text-indigo-200">
+                    {importStatus}
+                  </div>
+                )}
               </div>
 
               <div className="p-3.5 rounded-xl bg-slate-950 border border-white/10 space-y-2">
