@@ -1,11 +1,26 @@
 import { pgTable, serial, text, integer, boolean, timestamp, numeric, jsonb } from 'drizzle-orm/pg-core';
 
-// Vessels Catalog (FarPost Verified Fleet)
+// 1. Captains & Users Table
+export const usersTable = pgTable('users', {
+  id: text('id').primaryKey(), // e.g. usr_101 or telegram_123456
+  name: text('name').notNull(),
+  role: text('role').default('captain').notNull(), // 'captain' | 'passenger' | 'admin'
+  phone: text('phone'),
+  email: text('email'),
+  telegramUsername: text('telegram_username'),
+  wechatId: text('wechat_id'),
+  isVerified: boolean('is_verified').default(false).notNull(),
+  licenseGims: text('license_gims'),
+  rating: numeric('rating').default('5.0').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull()
+});
+
+// 2. Vessels Catalog Table
 export const vesselsTable = pgTable('vessels', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
-  type: text('type').notNull(), // 'yacht' | 'boat' | 'jet-ski' | 'catamaran' | 'hydrofoil'
-  category: text('category').notNull(), // 'vip' | 'active' | 'taxi' | 'standard'
+  type: text('type').notNull(), // 'yacht' | 'boat' | 'jetski' | 'catamaran' | 'hydrofoil'
+  category: text('category').notNull(), // 'vip' | 'active' | 'taxi'
   capacity: integer('capacity').notNull(),
   priceRub: integer('price_rub').notNull(),
   priceCny: integer('price_cny').notNull(),
@@ -15,14 +30,15 @@ export const vesselsTable = pgTable('vessels', {
   gimsLicense: text('gims_license').notNull(),
   hasSharkShield: boolean('has_shark_shield').default(false).notNull(),
   hasGpsTelemetry: boolean('has_gps_telemetry').default(true).notNull(),
-  isVerifiedFarpost: boolean('is_verified_farpost').default(true).notNull(),
+  isVerifiedGims: boolean('is_verified_gims').default(true).notNull(),
+  isDemo: boolean('is_demo').default(false).notNull(),
   image: text('image').notNull(),
   specs: jsonb('specs').$type<string[]>().default([]),
   description: text('description').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull()
 });
 
-// Bookings Table
+// 3. Bookings Table
 export const bookingsTable = pgTable('bookings', {
   id: text('id').primaryKey(), // Order ID e.g. B-901
   vesselId: text('vessel_id').notNull().references(() => vesselsTable.id),
@@ -42,23 +58,36 @@ export const bookingsTable = pgTable('bookings', {
   createdAt: timestamp('created_at').defaultNow().notNull()
 });
 
-// Security & Authentication Logs (152-ФЗ / 547-ФЗ Audit)
+// 4. Captain Verification Documents Table
+export const verificationDocsTable = pgTable('verification_docs', {
+  id: text('id').primaryKey(),
+  captainId: text('captain_id').notNull(),
+  vesselId: text('vessel_id'),
+  docType: text('doc_type').notNull(), // 'GIMS_LICENSE' | 'VESSEL_PASSPORT' | 'MCHS_SAFETY' | 'INSURANCE'
+  docNumber: text('doc_number').notNull(),
+  docImageUrl: text('doc_image_url'),
+  status: text('status').default('PENDING').notNull(), // 'PENDING' | 'APPROVED' | 'REJECTED'
+  reviewedAt: timestamp('reviewed_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull()
+});
+
+// 5. Security & Audit Logs Table (152-ФЗ / 547-ФЗ Audit)
 export const securityLogsTable = pgTable('security_logs', {
   id: serial('id').primaryKey(),
   userEmail: text('user_email'),
   phone: text('phone'),
-  authMethod: text('auth_method').notNull(), // 'EMAIL_OTP' | 'FLASH_CALL' | 'YANDEX_OAUTH' | 'WECHAT_OAUTH'
+  authMethod: text('auth_method').notNull(), // 'EMAIL_OTP' | 'FLASH_CALL' | 'TELEGRAM_AUTH' | 'WECHAT_OAUTH'
   ipAddress: text('ip_address'),
   status: text('status').notNull(), // 'SUCCESS' | 'FAILED' | 'BLOCKED_DOMAIN'
   details: text('details'),
   createdAt: timestamp('created_at').defaultNow().notNull()
 });
 
-// Initial FarPost Fleet Seed Dataset
-export const SEED_VESSELS = [
+// Demo Seed Dataset (Strictly 1 item per category for interface debug / captain onboard demo)
+export const DEMO_SEED_VESSELS = [
   {
-    id: 'julia-60',
-    name: 'Яхта «Джулия» VIP (Shark Shield)',
+    id: 'demo-vip-julia',
+    name: 'Яхта VIP «Джулия» [Демо-образ]',
     type: 'yacht',
     category: 'vip',
     capacity: 15,
@@ -70,34 +99,16 @@ export const SEED_VESSELS = [
     gimsLicense: 'GIMS-RU-25-9012',
     hasSharkShield: true,
     hasGpsTelemetry: true,
-    isVerifiedFarpost: true,
+    isVerifiedGims: true,
+    isDemo: true,
     image: 'https://images.unsplash.com/photo-1569263979104-865ab7cd8d13?auto=format&fit=crop&w=1200&q=80',
-    specs: ['Длина: 60 футов (18.5 м)', 'Система отпугивания акул Shark Shield (Электромагнитная)', '2 каюты флайбридж + камбуз', 'Морская акустика JBL Marine'],
-    description: 'Флагманская 60-футовая VIP-яхта для морских прогулок, свадеб и деловых встреч во Владивостоке. Оснащена промышленной австралийской системой Shark Shield для защиты купающихся от акул в бухтах острова Русский.'
+    specs: ['Длина: 60 футов (18.5 м)', 'Система отпугивания акул Shark Shield', 'Флайбридж и 2 каюты', 'Акустика JBL Marine'],
+    description: 'Образец оформления карточки VIP-яхты для капитанов-партнеров. Оснащена системой отпугивания акул.'
   },
   {
-    id: 'nika-48',
-    name: 'Премиум Яхта «Nika»',
-    type: 'yacht',
-    category: 'vip',
-    capacity: 12,
-    priceRub: 14000,
-    priceCny: 1100,
-    speedKm: 38,
-    pierLocation: 'Улисс',
-    captainName: 'Капитан Виктор С.',
-    gimsLicense: 'GIMS-RU-25-8831',
-    hasSharkShield: false,
-    hasGpsTelemetry: true,
-    isVerifiedFarpost: true,
-    image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&w=1200&q=80',
-    specs: ['Длина: 48 футов (14.6 м)', 'Роскошная кожаная каюта с панорамой', 'Сауна на борту и гриль-зона', 'SUP-борды включены в стоимость'],
-    description: 'Комфортабельная элитная яхта с панорамным остеклением и тиковым покрытием палубы. Идеальна для экскурсий к маяку Басаргина и архипелагу Императрицы Евгении.'
-  },
-  {
-    id: 'brp-seadoo-pospelovo',
-    name: 'Гидроциклы BRP SeaDoo RXT-X 300',
-    type: 'jet-ski',
+    id: 'demo-active-jetski',
+    name: 'Гидроцикл BRP SeaDoo RXT-300 [Демо-образ]',
+    type: 'jetski',
     category: 'active',
     capacity: 2,
     priceRub: 3500,
@@ -108,14 +119,15 @@ export const SEED_VESSELS = [
     gimsLicense: 'GIMS-RU-25-7712',
     hasSharkShield: false,
     hasGpsTelemetry: true,
-    isVerifiedFarpost: true,
+    isVerifiedGims: true,
+    isDemo: true,
     image: 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=1200&q=80',
-    specs: ['Мощность: 300 л.с.', 'Макс. скорость: 127 км/ч', 'Базирование: Причал Поспелово (о. Русский)', 'Гидрокостюмы, жилеты и инструктаж включены'],
-    description: 'Самые быстрые реактивные гидроциклы во Владивостоке. Локация Поспелово позволяет за 2 минуты выйти под Русский Мост и развить рекордные 127 км/ч.'
+    specs: ['Мощность: 300 л.с.', 'Скорость: до 127 км/ч', 'Базирование: Поспелово', 'Жилеты и гидрокостюмы'],
+    description: 'Образец карточки активного отдыха для проката гидроциклов и катеров в акватории острова Русский.'
   },
   {
-    id: 'zmeinka-express-boat',
-    name: 'Скоростной катер «Змеинка-Экспресс»',
+    id: 'demo-taxi-boat',
+    name: 'Морское такси «Русский Экспресс» [Демо-образ]',
     type: 'boat',
     category: 'taxi',
     capacity: 8,
@@ -127,28 +139,14 @@ export const SEED_VESSELS = [
     gimsLicense: 'GIMS-RU-25-4421',
     hasSharkShield: false,
     hasGpsTelemetry: true,
-    isVerifiedFarpost: true,
+    isVerifiedGims: true,
+    isDemo: true,
     image: 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=1200&q=80',
-    specs: ['Вместимость: 8 пассажиров', 'Базирование: Бухта Змеинка', 'Круглосуточное морское такси 24/7', 'Защитный закрытый тент от брызг'],
-    description: 'Надежное морское такси из бухты Змеинка. Быстрые трансферы на мыс Вятлина, бухту Новик и остров Попова.'
-  },
-  {
-    id: 'tokarevsky-taxi-shuttle',
-    name: 'Морское Такси «Токаревский Шаттл»',
-    type: 'boat',
-    category: 'taxi',
-    capacity: 6,
-    priceRub: 799,
-    priceCny: 65,
-    speedKm: 48,
-    pierLocation: 'Токаревский маяк',
-    captainName: 'Капитан Дмитрий К.',
-    gimsLicense: 'GIMS-RU-25-3310',
-    hasSharkShield: false,
-    hasGpsTelemetry: true,
-    isVerifiedFarpost: true,
-    image: 'https://images.unsplash.com/photo-1567899378494-47b22a2ae96a?auto=format&fit=crop&w=1200&q=80',
-    specs: ['Доступная цена: от 799 ₽/час', 'Базирование: Маяк Токаревского', 'Экспресс-рейсы по Босфору Восточному', 'Детские спасательные жилеты МЧС'],
-    description: 'Самый доступный катер морского такси у Токаревского маяка. Регулярные экскурсионные круги под Золотой и Русский мосты от 799 рублей за час.'
+    specs: ['Вместимость: 8 человек', 'Бухта Змеинка / Маяк Токаревского', 'Круглосуточный трансфер 24/7', 'Тент от брызг'],
+    description: 'Образец карточки морского такси и островных трансферов.'
   }
 ];
+
+// Legacy alias for compatibility during migration
+export const SEED_VESSELS = DEMO_SEED_VESSELS;
+

@@ -34,6 +34,7 @@ export interface Vessel {
   promoBadge?: string; // e.g. "🔥 VIP TOP-1"
   isCaptainVerified?: boolean; // Voluntary verification status "Подтверждённая квалификация"
   verifiedQualification?: boolean; // Verified badge
+  isDemo?: boolean; // Marked as demo example for debugging/captains
 }
 
 export interface AdCampaign {

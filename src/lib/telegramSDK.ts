@@ -31,6 +31,7 @@ export interface TelegramWebApp {
   viewportStableHeight: number;
   headerColor: string;
   backgroundColor: string;
+  isVersionAtLeast?: (version: string) => boolean;
   setHeaderColor?: (color: string) => void;
   setBackgroundColor?: (color: string) => void;
   ready: () => void;
@@ -102,19 +103,31 @@ export function isTelegramMiniApp(): boolean {
 export function initTelegramEnvironment(): void {
   const tg = getTelegramWebApp();
   if (tg) {
-    tg.ready();
-    tg.expand();
-    
-    // Set Header & Background colors matching JIV Fleet dark theme
     try {
-      if (tg.setHeaderColor) {
-        tg.setHeaderColor('#020617'); // slate-950
-      }
-      if (tg.setBackgroundColor) {
-        tg.setBackgroundColor('#020617');
+      tg.ready();
+    } catch {
+      // Ignore if not supported
+    }
+    
+    try {
+      tg.expand();
+    } catch {
+      // Ignore if not supported
+    }
+    
+    // Set Header & Background colors matching JIV Fleet dark theme (Telegram WebApp 6.1+ only)
+    try {
+      const supportsColorApi = tg.isVersionAtLeast ? tg.isVersionAtLeast('6.1') : false;
+      if (supportsColorApi) {
+        if (typeof tg.setHeaderColor === 'function') {
+          tg.setHeaderColor('#020617'); // slate-950
+        }
+        if (typeof tg.setBackgroundColor === 'function') {
+          tg.setBackgroundColor('#020617');
+        }
       }
     } catch {
-      // Ignore if unsupported in older versions
+      // Ignore if unsupported in older Telegram clients
     }
   }
 }
