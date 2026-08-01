@@ -197,11 +197,13 @@ export default function BookingDrawer({
     return sum;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !phone) return;
 
     const bookingId = 'B-' + Math.floor(Math.random() * 900 + 100);
+
+    const calculatedPrice = calculateTotalPrice();
 
     const details = {
       id: bookingId,
@@ -212,7 +214,7 @@ export default function BookingDrawer({
       time: tour ? tour.time : time,
       duration: tour ? tour.durationHours : duration,
       seatsCount: tour ? seatsCount : undefined,
-      totalPrice: calculateTotalPrice(),
+      totalPrice: calculatedPrice,
       captainName: vessel?.captainName || (lang === 'ru' ? 'Дмитрий (Организатор)' : 'Dmitry (Organizer)'),
       captainPhone: vessel?.captainPhone || '+7 (914) 703-44-55'
     };
@@ -227,7 +229,7 @@ export default function BookingDrawer({
       seatsCount: tour ? seatsCount : undefined,
       selectedExtras,
       couponApplied: isCouponApplied ? coupon : undefined,
-      totalPrice: calculateTotalPrice(),
+      totalPrice: calculatedPrice,
       customerName: name,
       customerPhone: phone,
       status: 'pending',
@@ -235,6 +237,26 @@ export default function BookingDrawer({
       wishesConditions,
       requestedAt: lang === 'ru' ? 'Только что' : lang === 'en' ? 'Just now' : '刚刚'
     };
+
+    // Dispatch lead to backend server
+    try {
+      await fetch('/api/v1/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          vesselId: newBooking.vesselId,
+          vesselTitle: newBooking.vesselName,
+          customerName: name,
+          customerContact: phone,
+          channel: 'web',
+          date: newBooking.date,
+          guests: tour ? seatsCount : 4,
+          totalPrice: calculatedPrice
+        })
+      });
+    } catch (err) {
+      console.warn('Backend lead dispatch warning:', err);
+    }
 
     onAddBooking(newBooking);
     setSubmitted(true);

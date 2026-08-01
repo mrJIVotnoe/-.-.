@@ -35,10 +35,18 @@ interface WeChatHubModalProps {
 }
 
 export default function WeChatHubModal({ isOpen, onClose, lang }: WeChatHubModalProps) {
-  const [activeTab, setActiveTab] = useState<'status' | 'pay' | 'package' | 'guide' | 'service'>('status');
+  const [activeTab, setActiveTab] = useState<'status' | 'pay' | 'tours' | 'package' | 'guide' | 'service'>('status');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [wxConfig, setWxConfig] = useState<any>(null);
   const [loadingConfig, setLoadingConfig] = useState<boolean>(true);
+
+  // WeChat Quick Booking Lead Form state
+  const [wxIdInput, setWxIdInput] = useState<string>('');
+  const [wxPhoneInput, setWxPhoneInput] = useState<string>('');
+  const [wxSelectedRoute, setWxSelectedRoute] = useState<string>('金角湾大桥与海港巡游');
+  const [wxGuestsCount, setWxGuestsCount] = useState<number>(2);
+  const [wxBookingDate, setWxBookingDate] = useState<string>('2026-08-05');
+  const [wxLeadSubmitted, setWxLeadSubmitted] = useState<boolean>(false);
 
   // WeChat Pay Test Form state
   const [testRub, setTestRub] = useState<number>(15000); // 15,000 RUB yacht rental demo
@@ -163,6 +171,18 @@ export default function WeChatHubModal({ isOpen, onClose, lang }: WeChatHubModal
           >
             <Smartphone className="w-4 h-4" />
             <span>Mini App SDK Status</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('tours')}
+            className={`px-3.5 py-2 rounded-xl font-bold transition-all flex items-center gap-2 ${
+              activeTab === 'tours' 
+                ? 'bg-red-500 text-white shadow-md' 
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+            }`}
+          >
+            <Sparkles className="w-4 h-4 text-amber-300" />
+            <span>精选线路与微信预订 (Chinese Tourist Funnel)</span>
           </button>
 
           <button
@@ -344,6 +364,245 @@ export default function WeChatHubModal({ isOpen, onClose, lang }: WeChatHubModal
                 )}
               </div>
             </form>
+          )}
+
+          {/* TAB: CHINESE TOURIST ROUTES & WECHAT QUICK BOOKING */}
+          {activeTab === 'tours' && (
+            <div className="space-y-6">
+              {/* Introduction Banner */}
+              <div className="p-4 rounded-xl bg-gradient-to-r from-red-950/60 to-amber-950/40 border border-red-500/30 text-slate-200 space-y-2">
+                <div className="flex items-center gap-2 text-red-400 font-bold text-sm">
+                  <Sparkles className="w-5 h-5 text-amber-300" />
+                  <span>符拉迪沃斯托克 (海参崴) 热门海上精品航线推荐</span>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  专为中国游客与商务代表团定制的特价游艇/快艇海航包船与拼船行程。支持微信一键预订、RMB (¥) 结算、中文导游服务及专属码头接送。
+                </p>
+              </div>
+
+              {/* 5 Curated Chinese Routes Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                
+                {/* Route 1 */}
+                <div className="p-4 rounded-2xl bg-slate-950 border border-white/10 hover:border-amber-500/50 transition-all space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/30">
+                      🌉 金角湾大桥与城市天际线巡游
+                    </span>
+                    <span className="text-xs font-mono font-bold text-emerald-400">¥ 380 / 人起</span>
+                  </div>
+                  <p className="text-xs text-slate-300">
+                    近距离观赏金角湾大桥 (Golden Horn Bridge)、远东潜艇博物馆、符拉迪沃斯托克商业港口与军港战舰。
+                  </p>
+                  <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 pt-2 border-t border-white/5">
+                    <span>⏱️ 时长: 2 小时</span>
+                    <span>🚤 容纳: 1-12 人</span>
+                    <button 
+                      onClick={() => setWxSelectedRoute('金角湾大桥与城市天际线巡游')}
+                      className="px-2.5 py-1 rounded bg-red-500/20 hover:bg-red-500 text-red-300 hover:text-white font-bold transition-all"
+                    >
+                      选择此线路
+                    </button>
+                  </div>
+                </div>
+
+                {/* Route 2 */}
+                <div className="p-4 rounded-2xl bg-slate-950 border border-white/10 hover:border-amber-500/50 transition-all space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/30">
+                      🦭 俄罗斯岛 & 斑海豹栖息地探秘
+                    </span>
+                    <span className="text-xs font-mono font-bold text-emerald-400">¥ 850 / 人起</span>
+                  </div>
+                  <p className="text-xs text-slate-300">
+                    驶向俄罗斯岛 (Russky Island) 托卡内夫斯基灯塔与斑海豹群落。包含 SUP 桨板体验与鲜活海胆品尝。
+                  </p>
+                  <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 pt-2 border-t border-white/5">
+                    <span>⏱️ 时长: 4 小时</span>
+                    <span>🦪 赠送海鲜品尝</span>
+                    <button 
+                      onClick={() => setWxSelectedRoute('俄罗斯岛 & 斑海豹栖息地探秘')}
+                      className="px-2.5 py-1 rounded bg-red-500/20 hover:bg-red-500 text-red-300 hover:text-white font-bold transition-all"
+                    >
+                      选择此线路
+                    </button>
+                  </div>
+                </div>
+
+                {/* Route 3 */}
+                <div className="p-4 rounded-2xl bg-slate-950 border border-white/10 hover:border-amber-500/50 transition-all space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/30">
+                      🌅 彼得大帝湾日落奢华游艇 package
+                    </span>
+                    <span className="text-xs font-mono font-bold text-emerald-400">¥ 1,200 / 人起</span>
+                  </div>
+                  <p className="text-xs text-slate-300">
+                    乘坐“朱莉娅”号 (Julia 60) 飞桥双层豪华游艇，配备防鲨鱼系统、香槟果盘与专业摄影打卡。
+                  </p>
+                  <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 pt-2 border-t border-white/5">
+                    <span>⏱️ 时长: 3 小时</span>
+                    <span>🍾 包含香槟果盘</span>
+                    <button 
+                      onClick={() => setWxSelectedRoute('彼得大帝湾日落奢华游艇')}
+                      className="px-2.5 py-1 rounded bg-red-500/20 hover:bg-red-500 text-red-300 hover:text-white font-bold transition-all"
+                    >
+                      选择此线路
+                    </button>
+                  </div>
+                </div>
+
+                {/* Route 4 */}
+                <div className="p-4 rounded-2xl bg-slate-950 border border-white/10 hover:border-amber-500/50 transition-all space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/30">
+                      🎣 日本海金枪鱼 & 鱿鱼深海海钓
+                    </span>
+                    <span className="text-xs font-mono font-bold text-emerald-400">¥ 1,500 / 人起</span>
+                  </div>
+                  <p className="text-xs text-slate-300">
+                    日本专业“金枪鱼捕猎者号” (Tuna Hunter 28) 运动海钓艇，Raymarine 3D 三维声呐，船长全程指导。
+                  </p>
+                  <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 pt-2 border-t border-white/5">
+                    <span>⏱️ 时长: 6 小时</span>
+                    <span>🎣 提供专业钓具</span>
+                    <button 
+                      onClick={() => setWxSelectedRoute('日本海金枪鱼 & 鱿鱼深海海钓')}
+                      className="px-2.5 py-1 rounded bg-red-500/20 hover:bg-red-500 text-red-300 hover:text-white font-bold transition-all"
+                    >
+                      选择此线路
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Quick WeChat Lead Booking Form */}
+              <div className="p-5 rounded-2xl bg-slate-950 border border-emerald-500/40 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-emerald-300 font-mono flex items-center gap-2">
+                    <Send className="w-4 h-4" />
+                    <span>微信一键快速预订 (WeChat Quick Booking Form)</span>
+                  </h3>
+                  <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded font-mono">
+                    24/7 中文客服在线
+                  </span>
+                </div>
+
+                {wxLeadSubmitted ? (
+                  <div className="p-4 rounded-xl bg-emerald-500/20 border border-emerald-500/50 text-emerald-200 text-xs space-y-2 text-center animate-fade-in">
+                    <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto" />
+                    <span className="font-bold text-sm block">✓ 预订申请已成功提交至船长与中文客服！</span>
+                    <p className="text-slate-300">
+                      微信号 <strong className="text-white">{wxIdInput || '已登记'}</strong> 的申请已确认。客服人员将在 5 分钟内通过微信联系您沟通出航细节与接送码头。
+                    </p>
+                    <button
+                      onClick={() => setWxLeadSubmitted(false)}
+                      className="mt-2 px-4 py-1.5 rounded-lg bg-emerald-500 text-slate-950 font-bold text-xs"
+                    >
+                      提交新的预订
+                    </button>
+                  </div>
+                ) : (
+                  <form 
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      try {
+                        await fetch('/api/v1/bookings', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            vesselTitle: `[WeChat Route] ${wxSelectedRoute}`,
+                            customerName: `WeChat User (${wxIdInput || 'Guest'})`,
+                            customerContact: `WX: ${wxIdInput} | Tel: ${wxPhoneInput}`,
+                            channel: 'wechat',
+                            date: wxBookingDate,
+                            guests: wxGuestsCount,
+                            totalPrice: 25000
+                          })
+                        });
+                      } catch (err) {
+                        console.error('Failed to dispatch booking lead to server:', err);
+                      }
+                      setWxLeadSubmitted(true);
+                    }}
+                    className="space-y-4 font-mono"
+                  >
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs text-slate-400 block mb-1 font-bold">微信号 (WeChat ID) *</label>
+                        <input
+                          type="text"
+                          value={wxIdInput}
+                          onChange={(e) => setWxIdInput(e.target.value)}
+                          placeholder="例如: wx_vladivostok_guest"
+                          className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs focus:outline-none focus:border-emerald-500"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs text-slate-400 block mb-1 font-bold">联系电话 (Phone) *</label>
+                        <input
+                          type="tel"
+                          value={wxPhoneInput}
+                          onChange={(e) => setWxPhoneInput(e.target.value)}
+                          placeholder="+86 139 0000 0000 / +7 900 000-00-00"
+                          className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs focus:outline-none focus:border-emerald-500"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div>
+                        <label className="text-xs text-slate-400 block mb-1 font-bold">已选线路</label>
+                        <select
+                          value={wxSelectedRoute}
+                          onChange={(e) => setWxSelectedRoute(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs focus:outline-none focus:border-emerald-500"
+                        >
+                          <option value="金角湾大桥与城市天际线巡游">金角湾大桥巡游 (¥380/人)</option>
+                          <option value="俄罗斯岛 & 斑海豹栖息地探秘">俄罗斯岛斑海豹 (¥850/人)</option>
+                          <option value="彼得大帝湾日落奢华游艇">日落奢华游艇 (¥1200/人)</option>
+                          <option value="日本海金枪鱼 & 鱿鱼深海海钓">深海海钓 (¥1500/人)</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="text-xs text-slate-400 block mb-1 font-bold">出行人数 (Guests)</label>
+                        <input
+                          type="number"
+                          value={wxGuestsCount}
+                          onChange={(e) => setWxGuestsCount(Number(e.target.value))}
+                          min={1}
+                          max={30}
+                          className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs focus:outline-none focus:border-emerald-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs text-slate-400 block mb-1 font-bold">预计日期 (Date)</label>
+                        <input
+                          type="date"
+                          value={wxBookingDate}
+                          onChange={(e) => setWxBookingDate(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs focus:outline-none focus:border-emerald-500"
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-extrabold text-xs flex items-center justify-center gap-2 transition-all shadow-lg"
+                    >
+                      <Send className="w-4 h-4" />
+                      <span>确认提交微信预订意向 (Send WeChat Lead)</span>
+                    </button>
+                  </form>
+                )}
+              </div>
+            </div>
           )}
 
           {/* TAB 3: SOURCE CODE PACKAGE FOR WECHAT DEVELOPER TOOLS */}

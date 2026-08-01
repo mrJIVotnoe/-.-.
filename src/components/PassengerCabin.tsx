@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Vessel, Booking } from '../types';
 import { 
   User, 
@@ -99,8 +99,49 @@ export default function PassengerCabin({
   const completedTripsCount = 3;
   const totalNauticalMiles = 54.6;
 
-  // Filter user bookings based on default user name
-  const userBookings = bookings.filter(b => b.customerName === userName || b.customerPhone === userPhone);
+  // Sync with backend API bookings
+  useEffect(() => {
+    async function syncBackendBookings() {
+      try {
+        const res = await fetch('/api/v1/bookings');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.bookings && Array.isArray(data.bookings)) {
+            setBookings(prev => {
+              const existingIds = new Set(prev.map(b => b.id));
+              const newFromBackend: Booking[] = data.bookings
+                .filter((b: any) => !existingIds.has(b.id))
+                .map((b: any) => ({
+                  id: b.id,
+                  vesselId: b.vesselId,
+                  vesselName: b.vesselTitle,
+                  bookingType: 'entire_yacht',
+                  date: b.date,
+                  timeStart: '12:00',
+                  totalPrice: b.totalPrice,
+                  customerName: b.customerName,
+                  customerPhone: b.customerContact,
+                  status: b.status || 'pending',
+                  requestedAt: new Date(b.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                }));
+              return [...newFromBackend, ...prev];
+            });
+          }
+        }
+      } catch (err) {
+        console.warn('Backend booking sync warning:', err);
+      }
+    }
+
+    syncBackendBookings();
+  }, [setBookings]);
+
+  // Filter user bookings based on default user name or fallback to all bookings if empty
+  const userBookings = bookings.length > 0
+    ? (bookings.filter(b => b.customerName === userName || b.customerPhone === userPhone).length > 0
+        ? bookings.filter(b => b.customerName === userName || b.customerPhone === userPhone)
+        : bookings)
+    : [];
 
   // Filter reviews written by this user
   const userReviews = reviews.filter(r => r.customerName === userName || r.customerName.includes('Евгений') || r.customerName.includes('Eugene'));

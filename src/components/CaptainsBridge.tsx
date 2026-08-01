@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Vessel, Booking } from '../types';
 import { 
   Ship, 
@@ -84,6 +84,43 @@ export default function CaptainsBridge({ vessels, setVessels, bookings, setBooki
       descZh: '日本专业级运动海钓艇，专门配备了在开阔海域捕捞金枪鱼、鰤鱼（鰤子鱼）和鱿鱼的顶级设备。船上安装了Raymarine 3D三维声呐、强力拉力绞车、拖钓支架、活饵养殖舱以及宽敞的解鱼台。船长是海上运动钓鱼大师。'
     }
   });
+
+  // Effect: Fetch server-side booking leads and merge into local bookings state
+  useEffect(() => {
+    async function syncBackendBookings() {
+      try {
+        const res = await fetch('/api/v1/bookings');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.bookings && Array.isArray(data.bookings)) {
+            setBookings(prev => {
+              const existingIds = new Set(prev.map(b => b.id));
+              const newFromBackend: Booking[] = data.bookings
+                .filter((b: any) => !existingIds.has(b.id))
+                .map((b: any) => ({
+                  id: b.id,
+                  vesselId: b.vesselId,
+                  vesselName: b.vesselTitle,
+                  bookingType: 'entire_yacht',
+                  date: b.date,
+                  timeStart: '12:00',
+                  totalPrice: b.totalPrice,
+                  customerName: b.customerName,
+                  customerPhone: b.customerContact,
+                  status: b.status || 'pending',
+                  requestedAt: new Date(b.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                }));
+              return [...newFromBackend, ...prev];
+            });
+          }
+        }
+      } catch (err) {
+        console.warn('Backend booking sync warning:', err);
+      }
+    }
+
+    syncBackendBookings();
+  }, []);
 
   // Photo Upload simulated list
   const [simulatedUploadedPhotos, setSimulatedUploadedPhotos] = useState<string[]>([
@@ -351,8 +388,19 @@ export default function CaptainsBridge({ vessels, setVessels, bookings, setBooki
   };
 
   // --- Confirm Booking Request in < 30 seconds ---
-  const handleBookingAction = (bookingId: string, action: 'confirmed' | 'declined') => {
+  const handleBookingAction = async (bookingId: string, action: 'confirmed' | 'declined') => {
     setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: action } : b));
+    
+    // Sync with backend API
+    try {
+      await fetch(`/api/v1/bookings/${bookingId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: action })
+      });
+    } catch (err) {
+      console.warn('Backend booking sync warning:', err);
+    }
     
     const targeted = bookings.find(b => b.id === bookingId);
     if (action === 'confirmed') {

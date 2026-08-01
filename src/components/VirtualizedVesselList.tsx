@@ -59,7 +59,7 @@ export default function VirtualizedVesselList({
       <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 mb-3 px-1">
         <span className="flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          <span>Оптимизация DOM: Vitualized List (tanstack/react-virtual) Active</span>
+          <span>Оптимизация DOM: Virtualized List (tanstack/react-virtual) Active</span>
         </span>
         <span>
           Отрендерено: {virtualItems.length} {isGrid ? 'строк сетки' : 'строк'} из {totalRows} (Всего судов: {vessels.length})

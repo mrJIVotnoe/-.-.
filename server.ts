@@ -382,6 +382,140 @@ app.get('/api/wechat/message/webhook', (req, res) => {
 });
 
 // ========================================================
+// 4e. Server-Side Booking & Operator Lead Management Store & API
+// ========================================================
+
+interface ServerBookingLead {
+  id: string;
+  vesselId: string;
+  vesselTitle: string;
+  customerName: string;
+  customerContact: string;
+  channel: 'web' | 'telegram' | 'wechat' | 'phone';
+  date: string;
+  guests: number;
+  totalPrice: number;
+  status: 'pending' | 'confirmed' | 'declined' | 'completed';
+  createdAt: string;
+}
+
+const initialServerBookings: ServerBookingLead[] = [
+  {
+    id: 'B-201',
+    vesselId: 'julia-60',
+    vesselTitle: 'Моторная яхта «Princess Julia 60»',
+    customerName: 'Евгений Крафт (VK Team)',
+    customerContact: '+7 (914) 700-11-22',
+    channel: 'web',
+    date: '2026-08-05',
+    guests: 8,
+    totalPrice: 120000,
+    status: 'pending',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'B-202',
+    vesselId: 'sea-ray-320',
+    vesselTitle: 'Катер «Sea Ray Sundancer 320»',
+    customerName: 'Ван Вэй (王伟 - WeChat)',
+    customerContact: 'wx_wangwei_shanghai',
+    channel: 'wechat',
+    date: '2026-08-06',
+    guests: 4,
+    totalPrice: 48000,
+    status: 'confirmed',
+    createdAt: new Date(Date.now() - 3600000 * 2).toISOString()
+  }
+];
+
+const serverBookingsStore = new Map<string, ServerBookingLead>(
+  initialServerBookings.map(b => [b.id, b])
+);
+
+// GET /api/v1/bookings — List all incoming booking leads
+app.get('/api/v1/bookings', (req, res) => {
+  const bookingsArray = Array.from(serverBookingsStore.values()).sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+  res.json({
+    status: 'success',
+    total: bookingsArray.length,
+    bookings: bookingsArray
+  });
+});
+
+// POST /api/v1/bookings — Submit new booking lead
+app.post('/api/v1/bookings', async (req, res) => {
+  const { vesselId, vesselTitle, customerName, customerContact, channel, date, guests, totalPrice } = req.body;
+
+  if (!vesselTitle || !customerContact) {
+    return res.status(400).json({ error: 'vesselTitle and customerContact are required' });
+  }
+
+  const bookingId = `B-${Math.floor(1000 + Math.random() * 9000)}`;
+  const newBooking: ServerBookingLead = {
+    id: bookingId,
+    vesselId: vesselId || 'vessel-general',
+    vesselTitle,
+    customerName: customerName || 'Гость Vladivostok Fleet',
+    customerContact,
+    channel: channel || 'web',
+    date: date || new Date().toISOString().split('T')[0],
+    guests: Number(guests) || 2,
+    totalPrice: Number(totalPrice) || 30000,
+    status: 'pending',
+    createdAt: new Date().toISOString()
+  };
+
+  serverBookingsStore.set(bookingId, newBooking);
+
+  // Optional Telegram alert to captain/operator if configured
+  const operatorChatId = process.env.TELEGRAM_ADMIN_CHAT_ID;
+  if (operatorChatId) {
+    const alertText = 
+      `⚓ <b>НОВАЯ ЗАЯВКА HA БРОНИРОВАНИЕ! #${bookingId}</b>\n\n` +
+      `🛥️ <b>Судно:</b> ${vesselTitle}\n` +
+      `👤 <b>Клиент:</b> ${newBooking.customerName}\n` +
+      `📞 <b>Контакты:</b> ${customerContact} (${newBooking.channel.toUpperCase()})\n` +
+      `📅 <b>Дата:</b> ${newBooking.date} (${newBooking.guests} чел.)\n` +
+      `💰 <b>Сумма:</b> ${newBooking.totalPrice.toLocaleString()} ₽`;
+      
+    await sendTelegramMessage(operatorChatId, alertText, {
+      inline_keyboard: [[{ text: '✅ Подтвердить в 1 клик', callback_data: `confirm_${bookingId}` }]]
+    });
+  }
+
+  res.json({
+    status: 'success',
+    message: 'Booking lead created successfully',
+    booking: newBooking
+  });
+});
+
+// PATCH /api/v1/bookings/:id — Update status of a booking lead
+app.patch('/api/v1/bookings/:id', (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  const existing = serverBookingsStore.get(id);
+  if (!existing) {
+    return res.status(404).json({ error: `Booking ${id} not found` });
+  }
+
+  if (status) {
+    existing.status = status;
+  }
+
+  serverBookingsStore.set(id, existing);
+
+  res.json({
+    status: 'success',
+    message: `Booking ${id} updated`,
+    booking: existing
+  });
+});
+
+// ========================================================
 // 5. Multi-Region OTP Authentication & Flash Call (звонок-сброс) Engine
 // ========================================================
 
