@@ -41,6 +41,7 @@ interface UpperTrayHeaderProps {
   onOpenTelegram: () => void;
   onOpenWeChat: () => void;
   onOpenAndroid: () => void;
+  onOpenAdmin?: () => void;
 }
 
 export default function UpperTrayHeader({
@@ -59,11 +60,37 @@ export default function UpperTrayHeader({
   onOpenSelfHosting,
   onOpenTelegram,
   onOpenWeChat,
-  onOpenAndroid
+  onOpenAndroid,
+  onOpenAdmin
 }: UpperTrayHeaderProps) {
   const trayScrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
+
+  // Triple-click logo Easter Egg detection for Admin Command Center
+  const clickCountRef = useRef<number>(0);
+  const clickTimerRef = useRef<any>(null);
+
+  const handleLogoClick = () => {
+    clickCountRef.current += 1;
+
+    if (clickCountRef.current >= 3) {
+      if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
+      clickCountRef.current = 0;
+      if (onOpenAdmin) {
+        onOpenAdmin();
+      }
+      return;
+    }
+
+    if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
+    clickTimerRef.current = setTimeout(() => {
+      if (clickCountRef.current < 3) {
+        setActiveSection('rent');
+      }
+      clickCountRef.current = 0;
+    }, 400);
+  };
 
   // Check scroll positions to show/hide gradient arrows
   const updateScrollState = () => {
@@ -100,7 +127,7 @@ export default function UpperTrayHeader({
         {/* Brand Identity & Title */}
         <div 
           className="flex items-center gap-2.5 cursor-pointer group shrink-0" 
-          onClick={() => setActiveSection('rent')}
+          onClick={handleLogoClick}
           id="main-logo-brand"
         >
           <div className="relative flex items-center justify-center w-8 sm:w-9 h-8 sm:h-9 rounded-xl bg-gradient-to-br from-amber-300 via-amber-400 to-amber-600 text-slate-950 font-extrabold text-sm sm:text-base tracking-tighter shadow-[0_0_18px_rgba(245,158,11,0.4)] group-hover:scale-105 transition-all border border-amber-300/50 shrink-0">

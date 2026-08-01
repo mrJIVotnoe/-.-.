@@ -28,6 +28,7 @@ import SelfHostingModal from './components/SelfHostingModal';
 import TelegramHubModal from './components/TelegramHubModal';
 import WeChatHubModal from './components/WeChatHubModal';
 import AndroidHubModal from './components/AndroidHubModal';
+import AdminCommandCenterModal from './components/AdminCommandCenterModal';
 import UpperTrayHeader from './components/UpperTrayHeader';
 import { initTelegramEnvironment } from './lib/telegramSDK';
 import { initWeChatEnvironment } from './lib/wechatSDK';
@@ -299,6 +300,7 @@ function AppContent() {
   const [isTelegramModalOpen, setIsTelegramModalOpen] = useState<boolean>(false);
   const [isWeChatModalOpen, setIsWeChatModalOpen] = useState<boolean>(false);
   const [isAndroidModalOpen, setIsAndroidModalOpen] = useState<boolean>(false);
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState<boolean>(false);
 
   // Initialize Telegram & WeChat WebApp SDKs
   useEffect(() => {
@@ -450,6 +452,7 @@ function AppContent() {
         onOpenTelegram={() => setIsTelegramModalOpen(true)}
         onOpenWeChat={() => setIsWeChatModalOpen(true)}
         onOpenAndroid={() => setIsAndroidModalOpen(true)}
+        onOpenAdmin={() => setIsAdminModalOpen(true)}
       />
 
       {/* Main Content Area */}
@@ -1460,6 +1463,12 @@ function AppContent() {
         isOpen={isAndroidModalOpen}
         onClose={() => setIsAndroidModalOpen(false)}
         lang={lang}
+      />
+
+      {/* 7. Hidden Shadow Admin Command Center Modal (Triple click logo Easter Egg) */}
+      <AdminCommandCenterModal
+        isOpen={isAdminModalOpen}
+        onClose={() => setIsAdminModalOpen(false)}
       />
 
       {/* Decorative Elegant Footer */}

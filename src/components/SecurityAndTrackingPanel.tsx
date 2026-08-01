@@ -319,7 +319,7 @@ export default function SecurityAndTrackingPanel({
   const [wechatConnected, setWechatConnected] = useState(false);
 
   // Method Tab inside mode (phone, sso, email)
-  const [authMethod, setAuthMethod] = useState<'phone' | 'sso' | 'email'>('phone');
+  const [authMethod, setAuthMethod] = useState<'phone' | 'sso' | 'email'>('email');
 
   // Russian Email Domain Validator
   const isRussianEmail = (email: string) => {

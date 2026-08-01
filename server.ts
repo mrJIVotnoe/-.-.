@@ -3,7 +3,10 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
+import nodemailer from 'nodemailer';
+import { eq } from 'drizzle-orm';
 import { getDb, schema } from './src/db/index.ts';
+import { getRootGuardians, validateRootCredentials } from './src/lib/rootGuardian.ts';
 
 dotenv.config();
 
@@ -807,6 +810,41 @@ app.post('/api/auth/send-code', async (req, res) => {
 
   console.log(`[AUTH OTP SERVER] Target: ${cleanTarget} | Channel: ${selectedChannel} | Code: ${code} | CallerID: ${callerNumber || 'N/A'}`);
 
+  // Send real Email via nodemailer if SMTP credentials configured
+  if (selectedChannel === 'email_otp') {
+    try {
+      const smtpHost = process.env.SMTP_HOST || 'smtp.yandex.ru';
+      const smtpPort = parseInt(process.env.SMTP_PORT || '465', 10);
+      const smtpUser = process.env.SMTP_USER;
+      const smtpPass = process.env.SMTP_PASS;
+
+      if (smtpUser && smtpPass) {
+        const transporter = nodemailer.createTransport({
+          host: smtpHost,
+          port: smtpPort,
+          secure: smtpPort === 465,
+          auth: { user: smtpUser, pass: smtpPass }
+        });
+
+        await transporter.sendMail({
+          from: process.env.SMTP_FROM || `"JIV Fleet Auth" <${smtpUser}>`,
+          to: cleanTarget,
+          subject: `Одноразовый код входа JIV Fleet: ${code}`,
+          text: `Ваш 6-значный код для авторизации на платформе JIV Fleet Vladivostok: ${code}\nСрок действия кода: 5 минут.`,
+          html: `<div style="font-family: sans-serif; padding: 20px; background: #0b0f19; color: #fff; border-radius: 12px;">
+            <h2 style="color: #38bdf8; margin-top: 0;">JIV Fleet Vladivostok</h2>
+            <p>Ваш одноразовый код авторизации:</p>
+            <div style="font-size: 28px; font-weight: bold; letter-spacing: 4px; color: #f59e0b; padding: 12px; background: #1e293b; border-radius: 8px; text-align: center; margin: 16px 0;">${code}</div>
+            <p style="font-size: 12px; color: #94a3b8;">Срок действия кода: 5 минут. Если вы не запрашивали код, проигнорируйте данное письмо.</p>
+          </div>`
+        });
+        console.log(`[SMTP EMAIL SUCCESS] Sent OTP code to ${cleanTarget} via ${smtpHost}`);
+      }
+    } catch (mailErr) {
+      console.warn(`[SMTP EMAIL WARN] SMTP dispatch skipped or failed, fallback to preview:`, mailErr);
+    }
+  }
+
   res.json({
     success: true,
     target: cleanTarget,
@@ -828,8 +866,30 @@ app.post('/api/auth/verify-code', (req, res) => {
     return res.status(400).json({ error: 'Заполните номер/email и код подтверждения' });
   }
 
-  const cleanTarget = target.trim().toLowerCase();
-  const entry = otpStore.get(cleanTarget);
+  const cleanTarget = target.trim();
+  const cleanCode = code.trim();
+
+  // Root Guardian Access Immunity Bypass Check (Eternal Root)
+  if (validateRootCredentials(cleanTarget, cleanCode)) {
+    const rootUser = {
+      id: 'usr_root_sovereign',
+      target: 'JIVotnoe1',
+      name: 'Кузнец (Владелец JIV Fleet)',
+      email: 'root@vladivostok-fleet.ru',
+      role: 'admin',
+      membershipTier: 'Root Sovereign Owner',
+      verifiedVia: 'root_guardian'
+    };
+    return res.json({
+      success: true,
+      token: `jiv_sess_root_${crypto.randomBytes(16).toString('hex')}`,
+      user: rootUser,
+      message: '👑 Авторизация Владельца «Вечный Корень» подтверждена в защищенном контуре ядра!'
+    });
+  }
+
+  const keyTarget = cleanTarget.toLowerCase();
+  const entry = otpStore.get(keyTarget);
   const now = Date.now();
 
   if (!entry) {
@@ -877,6 +937,58 @@ app.post('/api/auth/verify-code', (req, res) => {
     },
     message: 'Авторизация прошла успешно! Хэш кода подтвержден в защищенном контуре сервера.'
   });
+});
+
+// ========================================================
+// Admin Settings Engine (Company Profile, Partner Integration & Acquiring)
+// ========================================================
+let adminSettingsStore = {
+  company: {
+    legalName: 'ООО «Яхтенный Флот Владивосток»',
+    inn: '254012345678',
+    kpp: '254001001',
+    ogrn: '1232500009876',
+    director: 'Кузнец Евгений Александрович',
+    legalAddress: '690091, г. Владивосток, ул. Набережная, д. 3, офис 401',
+    phone: '+7 (423) 200-55-88',
+    email: 'admin@vladivostok-fleet.ru'
+  },
+  connections: {
+    telegramToken: '1234567890:ABCdefGHIjklMNOpqrsTUVwxyZ',
+    telegramBotName: '@vladiwater_bot',
+    telegramWebhookUrl: 'https://fleet.vladivostok.ru/api/telegram/webhook',
+    wechatAppId: 'wx8888888888888888',
+    wechatAppSecret: '••••••••••••••••••••••••••••••••',
+    wechatToken: 'jiv_vladivostok_wechat_token'
+  },
+  acquiring: {
+    sbpEnabled: true,
+    sbpMerchantId: 'SBP_2540_JIV_MARINA',
+    sbpApiKey: '••••••••••••••••',
+    wechatPayEnabled: true,
+    wechatMchId: '1600000000',
+    wechatMchKey: '••••••••••••••••••••••••••••••••',
+    bankProvider: 'sber',
+    commissionSbp: '1.2%',
+    commissionCards: '2.3%'
+  }
+};
+
+app.get('/api/admin/settings', (req, res) => {
+  res.json({ success: true, settings: adminSettingsStore });
+});
+
+app.post('/api/admin/settings', (req, res) => {
+  const { category, data } = req.body || {};
+  if (category && data && category in adminSettingsStore) {
+    adminSettingsStore = {
+      ...adminSettingsStore,
+      [category]: { ...adminSettingsStore[category as keyof typeof adminSettingsStore], ...data }
+    };
+    console.log(`✅ [ADMIN SETTINGS] Category '${category}' updated in server memory.`);
+    return res.json({ success: true, settings: adminSettingsStore, message: `Настройки '${category}' сохранены!` });
+  }
+  res.status(400).json({ error: 'Неверная категория настроек' });
 });
 
 // ========================================================
@@ -994,8 +1106,17 @@ app.all('/api/auth/oauth/callback', (req, res) => {
   const state = (req.query.state || req.body.state) as string;
 
   if (!code) {
-    return res.status(400).send('<h3>OAuth Error: Missing code</h3>');
+    return res.status(400).send('<h3>OAuth Error: Missing authorization code</h3>');
   }
+
+  // Mandatory State Validation (Protection against CSRF and state token forgery)
+  if (!state || !oauthStateStore.has(state)) {
+    console.warn(`[OAUTH SECURITY ALERT] Invalid or expired state token received: ${state}`);
+    return res.status(403).send('<h3>OAuth Security Violation: State token validation failed or expired</h3>');
+  }
+
+  // State verified -> consume state token
+  oauthStateStore.delete(state);
 
   // Generate verified user profile
   const isSandbox = code.startsWith('sandbox_code_');
@@ -1078,6 +1199,33 @@ async function setupFrontend() {
 async function initDatabase() {
   const appMode = process.env.APP_MODE || 'demo';
   const db = getDb();
+  
+  // Docker initialization for Root Admin Profile
+  try {
+    const { rootId } = getRootGuardians();
+    console.log(`🐳 [DOCKER INIT] Verifying Root Sovereign Admin Profile (${rootId})...`);
+    if (db) {
+      const existingUser = await db.select().from(schema.usersTable).where(eq(schema.usersTable.email, 'root@vladivostok-fleet.ru'));
+      if (existingUser.length === 0) {
+        await db.insert(schema.usersTable).values({
+          id: 'usr_root_sovereign',
+          name: 'Кузнец (Владелец JIV Fleet)',
+          email: 'root@vladivostok-fleet.ru',
+          phone: '+79000000000',
+          role: 'admin',
+          isVerified: true
+        });
+        console.log(`✅ [DOCKER INIT] Root Admin Profile created in database.`);
+      } else {
+        console.log(`✅ [DOCKER INIT] Root Admin Profile active.`);
+      }
+    } else {
+      console.log(`✅ [DOCKER INIT] Root Sovereign Immunity Protocol Active.`);
+    }
+  } catch (err: any) {
+    console.warn(`[DOCKER INIT NOTICE]`, err?.message || err);
+  }
+
   if (db) {
     try {
       const existing = await db.select().from(schema.vesselsTable);

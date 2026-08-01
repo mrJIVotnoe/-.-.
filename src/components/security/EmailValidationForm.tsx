@@ -108,7 +108,7 @@ export default function EmailValidationForm({ onSendCode, onVerifyEmail, isSendi
                 type="text"
                 value={codeOrPass}
                 onChange={e => setCodeOrPass(e.target.value)}
-                placeholder={lang === 'ru' ? 'Код из письма (4 цифры)' : '4-digit OTP code'}
+                placeholder={lang === 'ru' ? 'Код из письма (6 цифр)' : '6-digit OTP code'}
                 className="flex-1 bg-slate-950 border border-white/15 rounded-xl px-3.5 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 font-mono"
               />
               <button
