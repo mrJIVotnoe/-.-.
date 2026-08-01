@@ -3,6 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
+import { getDb, schema } from './src/db/index.ts';
 
 dotenv.config();
 
@@ -417,13 +418,67 @@ const serverBookingsStore = new Map<string, ServerBookingLead>(
   initialServerBookings.map(b => [b.id, b])
 );
 
-// GET /api/v1/bookings — List all incoming booking leads
-app.get('/api/v1/bookings', (req, res) => {
+// ========================================================
+// PostgreSQL Database Integration Endpoints
+// ========================================================
+
+// GET /api/v1/db/vessels — Fetch catalog from PostgreSQL (or SEED_VESSELS fallback)
+app.get('/api/v1/db/vessels', async (req, res) => {
+  const db = getDb();
+  if (db) {
+    try {
+      const vessels = await db.select().from(schema.vesselsTable);
+      return res.json({ status: 'success', source: 'postgresql', vessels });
+    } catch (err: any) {
+      console.error('Error fetching vessels from DB:', err?.message);
+    }
+  }
+  return res.json({ status: 'success', source: 'seed_memory', vessels: schema.SEED_VESSELS });
+});
+
+// POST /api/v1/db/seed — Initialize DB with SEED_VESSELS
+app.post('/api/v1/db/seed', async (req, res) => {
+  const db = getDb();
+  if (!db) {
+    return res.status(400).json({ error: 'DATABASE_URL not configured. Cannot seed PostgreSQL.' });
+  }
+  try {
+    const existing = await db.select().from(schema.vesselsTable);
+    if (existing.length > 0) {
+      return res.json({ status: 'already_seeded', count: existing.length });
+    }
+    await db.insert(schema.vesselsTable).values(schema.SEED_VESSELS);
+    res.json({ status: 'success', inserted: schema.SEED_VESSELS.length });
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message || 'Database seed failed' });
+  }
+});
+
+// GET /api/v1/bookings — List all incoming booking leads (DB or Memory)
+app.get('/api/v1/bookings', async (req, res) => {
+  const db = getDb();
+  if (db) {
+    try {
+      const dbBookings = await db.select().from(schema.bookingsTable);
+      if (dbBookings.length > 0) {
+        return res.json({
+          status: 'success',
+          source: 'postgresql',
+          total: dbBookings.length,
+          bookings: dbBookings
+        });
+      }
+    } catch (err: any) {
+      console.warn('DB bookings query failed, falling back to memory:', err?.message);
+    }
+  }
+
   const bookingsArray = Array.from(serverBookingsStore.values()).sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
   res.json({
     status: 'success',
+    source: 'in_memory',
     total: bookingsArray.length,
     bookings: bookingsArray
   });
@@ -453,6 +508,30 @@ app.post('/api/v1/bookings', async (req, res) => {
   };
 
   serverBookingsStore.set(bookingId, newBooking);
+
+  // Persist to PostgreSQL if available
+  const db = getDb();
+  if (db) {
+    try {
+      await db.insert(schema.bookingsTable).values({
+        id: bookingId,
+        vesselId: newBooking.vesselId,
+        vesselName: newBooking.vesselTitle,
+        customerName: newBooking.customerName,
+        customerPhone: newBooking.customerContact,
+        bookingDate: newBooking.date,
+        startTime: '10:00',
+        durationHours: 4,
+        totalPriceRub: newBooking.totalPrice,
+        paymentMethod: 'SBP',
+        paymentStatus: 'PENDING',
+        passengersCount: newBooking.guests
+      });
+      console.log(`✅ Saved booking ${bookingId} to PostgreSQL database`);
+    } catch (err: any) {
+      console.warn(`⚠️ Failed to persist booking ${bookingId} to PostgreSQL:`, err?.message);
+    }
+  }
 
   // Optional Telegram alert to captain/operator if configured
   const operatorChatId = process.env.TELEGRAM_ADMIN_CHAT_ID;
@@ -996,12 +1075,38 @@ async function setupFrontend() {
   }
 }
 
-setupFrontend().then(() => {
+async function initDatabase() {
+  const appMode = process.env.APP_MODE || 'demo';
+  const db = getDb();
+  if (db) {
+    try {
+      const existing = await db.select().from(schema.vesselsTable);
+      if (existing.length === 0) {
+        console.log('🌱 Seeding database with initial FarPost vessels...');
+        await db.insert(schema.vesselsTable).values(schema.SEED_VESSELS);
+        console.log(`✅ Database seeded with ${schema.SEED_VESSELS.length} vessels.`);
+      } else {
+        console.log(`⚓ Database ready with ${existing.length} vessels in fleet catalog.`);
+      }
+    } catch (err: any) {
+      console.warn('⚠️ Database initialization check notice:', err?.message || err);
+    }
+  } else {
+    if (appMode === 'production') {
+      console.warn('⚠️ [APP_MODE=production] DATABASE_URL is not set. Running with memory fallback.');
+    } else {
+      console.log('ℹ️ APP_MODE=demo: Active memory & local storage mode.');
+    }
+  }
+}
+
+setupFrontend().then(async () => {
+  await initDatabase();
   const server = app.listen(PORT, HOST, () => {
     console.log(`====================================================`);
     console.log(`⚓ JIV Fleet Platform Server Running`);
     console.log(`🌐 Address: http://${HOST}:${PORT}`);
-    console.log(`🛠️  Mode: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🛠️  Mode: ${process.env.NODE_ENV || 'development'} | APP_MODE: ${process.env.APP_MODE || 'demo'}`);
     console.log(`✅ Ready for Bare-Metal Self-Hosting & Cloud Migration`);
     console.log(`====================================================`);
   });
