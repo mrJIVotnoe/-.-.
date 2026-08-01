@@ -206,65 +206,6 @@ export default function PassengerCabin({
   return (
     <div className="space-y-8 animate-fade-in text-left" id="passenger-cabin-view">
       
-      {/* Role Switcher Toolbar Banner if logged in or selecting role */}
-      <div className="p-3 rounded-2xl bg-slate-900/90 border border-white/10 flex flex-wrap items-center justify-between gap-3 shadow-xl" id="cabin-role-selector-bar">
-        <div className="flex items-center gap-2">
-          <ShieldCheck className="w-4 h-4 text-emerald-400" />
-          <span className="text-xs font-bold text-white font-mono uppercase tracking-wider">
-            {lang === 'ru' ? 'Режим личного кабинета JIV:' : 'JIV Account Mode:'}
-          </span>
-        </div>
-        <div className="flex items-center gap-1.5 bg-slate-950 p-1 rounded-xl border border-white/10">
-          <button
-            type="button"
-            onClick={() => {
-              if (onRoleChange) onRoleChange('client');
-              if (onNavigateSection) onNavigateSection('cabin');
-            }}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold font-mono transition-all flex items-center gap-1.5 ${
-              activeRole === 'client'
-                ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow'
-                : 'text-slate-400 hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <User className="w-3.5 h-3.5 text-rose-400" />
-            <span>{lang === 'ru' ? 'Пассажир' : 'Passenger'}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              if (onRoleChange) onRoleChange('captain');
-              if (onNavigateSection) onNavigateSection('captain');
-            }}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold font-mono transition-all flex items-center gap-1.5 ${
-              activeRole === 'captain'
-                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow'
-                : 'text-slate-400 hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <Anchor className="w-3.5 h-3.5 text-amber-400" />
-            <span>{lang === 'ru' ? 'Капитан' : 'Captain'}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              if (onRoleChange) onRoleChange('partner');
-              if (onNavigateSection) onNavigateSection('partner');
-            }}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold font-mono transition-all flex items-center gap-1.5 ${
-              activeRole === 'partner'
-                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow'
-                : 'text-slate-400 hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <Building2 className="w-3.5 h-3.5 text-cyan-400" />
-            <span>{lang === 'ru' ? 'Партнёр' : 'Partner'}</span>
-          </button>
-        </div>
-      </div>
-
       {/* 1. PROFILE HEADER BOARD WITH DUAL RATINGS */}
       <div className="relative rounded-3xl border border-white/10 bg-slate-900/50 backdrop-blur-xl p-6 md:p-8 overflow-hidden shadow-2xl" id="passenger-profile-board">
         <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-bl from-cyan-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />

@@ -31,7 +31,13 @@ import {
   Lock,
   Eye,
   EyeOff,
-  HelpCircle
+  HelpCircle,
+  PhoneCall,
+  Phone,
+  Clock,
+  KeyRound,
+  RefreshCw,
+  ShieldAlert
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Vessel } from '../types';
@@ -125,7 +131,129 @@ export default function SecurityAndTrackingPanel({
   const [smsSent, setSmsSent] = useState(false);
   const [emailInput, setEmailInput] = useState('evgeny@yandex.ru');
   const [passwordInput, setPasswordInput] = useState('••••••••');
+  const [emailAuthType, setEmailAuthType] = useState<'otp' | 'password'>('otp');
   const [isLoggedIn, setIsLoggedIn] = useState(true);
+
+  // OTP Verification & Flash Call states
+  const [channelPreference, setChannelPreference] = useState<'flash_call' | 'sms'>('flash_call');
+  const [isSendingCode, setIsSendingCode] = useState<boolean>(false);
+  const [isVerifyingCode, setIsVerifyingCode] = useState<boolean>(false);
+  const [resendCooldown, setResendCooldown] = useState<number>(0);
+  const [activeOtpInfo, setActiveOtpInfo] = useState<{
+    channel?: string;
+    callerNumber?: string;
+    demoCodePreview?: string;
+    costSavingsNote?: string;
+  } | null>(null);
+  const [codeErrorMessage, setCodeErrorMessage] = useState<string | null>(null);
+
+  // Resend cooldown timer
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setResendCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
+
+  // Request OTP Code via Server REST API (/api/auth/send-code)
+  const handleSendCode = async (overrideTarget?: string, overrideType?: 'phone' | 'email') => {
+    const target = overrideTarget || (authMethod === 'email' ? emailInput : phoneInput);
+    const type = overrideType || (authMethod === 'email' ? 'email' : 'phone');
+
+    if (!target || target.trim().length < 5) {
+      triggerToast('⚠️ Укажите корректный номер телефона или email');
+      return;
+    }
+
+    setIsSendingCode(true);
+    setCodeErrorMessage(null);
+
+    try {
+      const response = await fetch('/api/auth/send-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          target,
+          type,
+          channelPreference,
+          region: activeAuthTabMode,
+          lang
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 429 && data.secondsRemaining) {
+          setResendCooldown(data.secondsRemaining);
+        }
+        setCodeErrorMessage(data.error || 'Ошибка отправки кода.');
+        triggerToast(`⚠️ ${data.error || 'Не удалось отправить код'}`);
+      } else {
+        setSmsSent(true);
+        setResendCooldown(data.resendCooldownSeconds || 60);
+        setActiveOtpInfo({
+          channel: data.channel,
+          callerNumber: data.callerNumber,
+          demoCodePreview: data.demoCodePreview,
+          costSavingsNote: data.costSavingsNote
+        });
+
+        if (data.channel === 'flash_call') {
+          triggerToast(`📞 Flash Call (звонок-сброс) выполнен на номер! Код — последние 4 цифры (${data.demoCodePreview})`);
+        } else if (data.channel === 'email_otp') {
+          triggerToast(`✉️ Код подтверждения отправлен на почту ${target} (Код: ${data.demoCodePreview})`);
+        } else {
+          triggerToast(`📨 СМС с кодом отправлено на номер ${target} (Код: ${data.demoCodePreview})`);
+        }
+      }
+    } catch (err) {
+      setCodeErrorMessage('Ошибка связи с сервером авторизации.');
+      triggerToast('⚠️ Ошибка подключения к серверу авторизации');
+    } finally {
+      setIsSendingCode(false);
+    }
+  };
+
+  // Verify OTP Code via Server REST API (/api/auth/verify-code)
+  const handleVerifyCode = async () => {
+    const target = authMethod === 'email' ? emailInput : phoneInput;
+
+    if (!smsCodeInput || smsCodeInput.trim().length < 4) {
+      triggerToast('⚠️ Введите код подтверждения');
+      return;
+    }
+
+    setIsVerifyingCode(true);
+    setCodeErrorMessage(null);
+
+    try {
+      const response = await fetch('/api/auth/verify-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          target,
+          code: smsCodeInput
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setCodeErrorMessage(data.error || 'Неверный код.');
+        triggerToast(`❌ ${data.error || 'Ошибка проверки кода'}`);
+      } else {
+        setIsLoggedIn(true);
+        triggerToast(`✅ ${data.message || 'Успешная авторизация!'}`);
+      }
+    } catch (err) {
+      setCodeErrorMessage('Ошибка связи с сервером авторизации.');
+      triggerToast('⚠️ Не удалось проверить код на сервере');
+    } finally {
+      setIsVerifyingCode(false);
+    }
+  };
 
   // Messenger Integrations
   const [maxConnected, setMaxConnected] = useState(true);
@@ -542,59 +670,179 @@ ${trkpts}
                 </button>
               </div>
 
-              {/* Phone + SMS Method */}
+              {/* Phone + Flash Call / SMS Method */}
               {authMethod === 'phone' && (
-                <div className="space-y-3 bg-slate-950/60 p-3 rounded-lg border border-white/5">
-                  <span className="text-[11px] font-mono text-slate-300 block">
-                    Введите номер мобильного телефона операторов РФ (+7):
-                  </span>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={phoneInput}
-                      onChange={(e) => setPhoneInput(e.target.value)}
-                      placeholder="+7 (900) 000-00-00"
-                      className="flex-1 bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-xs text-white font-mono"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSmsSent(true);
-                        triggerToast('📨 СМС с кодом подтверждения отправлено на номер ' + phoneInput + ' (Код: 4829)');
-                      }}
-                      className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold font-mono transition-all"
-                    >
-                      {smsSent ? 'Повторить' : 'Запросить СМС'}
-                    </button>
+                <div className="space-y-3 bg-slate-950/60 p-3.5 rounded-lg border border-white/5">
+                  
+                  {/* Channel Choice: Flash Call vs SMS */}
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[11px] font-mono text-slate-300 block">
+                        Способ подтверждения (+7 РФ):
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+                      <button
+                        type="button"
+                        onClick={() => setChannelPreference('flash_call')}
+                        className={`p-2 rounded-lg border text-left transition-all ${
+                          channelPreference === 'flash_call'
+                            ? 'bg-amber-500/20 border-amber-500/50 text-amber-200'
+                            : 'bg-slate-900 border-white/10 text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5 font-bold">
+                          <PhoneCall className="w-3.5 h-3.5 text-amber-400" />
+                          <span>Звонок-сброс</span>
+                        </div>
+                        <p className="text-[9.5px] text-slate-400 mt-0.5 leading-tight">
+                          Вам поступит звонок. Код — последние 4 цифры номера
+                        </p>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setChannelPreference('sms')}
+                        className={`p-2 rounded-lg border text-left transition-all ${
+                          channelPreference === 'sms'
+                            ? 'bg-red-500/20 border-red-500/50 text-red-200'
+                            : 'bg-slate-900 border-white/10 text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5 font-bold">
+                          <Phone className="w-3.5 h-3.5 text-red-400" />
+                          <span>СМС-сообщение</span>
+                        </div>
+                        <p className="text-[9.5px] text-slate-400 mt-0.5 leading-tight">
+                          Стандартное текстовое СМС с 4-значным кодом
+                        </p>
+                      </button>
+                    </div>
                   </div>
 
+                  {/* Phone Input & Send Trigger */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-mono text-slate-400 block">
+                      Номер мобильного телефона (+7):
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={phoneInput}
+                        onChange={(e) => setPhoneInput(e.target.value)}
+                        placeholder="+7 (900) 000-00-00"
+                        className="flex-1 bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-xs text-white font-mono focus:border-red-500 focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        disabled={isSendingCode || resendCooldown > 0}
+                        onClick={() => handleSendCode(phoneInput, 'phone')}
+                        className={`px-3 py-2 rounded-lg text-xs font-bold font-mono transition-all flex items-center gap-1.5 shrink-0 ${
+                          resendCooldown > 0
+                            ? 'bg-slate-800 text-slate-400 cursor-not-allowed border border-white/5'
+                            : channelPreference === 'flash_call'
+                            ? 'bg-amber-600 hover:bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/10'
+                            : 'bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-500/10'
+                        }`}
+                      >
+                        {isSendingCode ? (
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        ) : resendCooldown > 0 ? (
+                          <>
+                            <Clock className="w-3.5 h-3.5" />
+                            <span>{resendCooldown} с</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>{smsSent ? 'Повторить' : channelPreference === 'flash_call' ? 'Запросить звонок' : 'Запросить СМС'}</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Flash Call Info / SMS Verification Container */}
                   {smsSent && (
-                    <div className="space-y-2 pt-2 border-t border-white/5 animate-fade-in">
-                      <span className="text-[10px] text-emerald-400 font-mono block">
-                        ✓ СМС отправлено. Введите 4-значный код:
-                      </span>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          maxLength={4}
-                          value={smsCodeInput}
-                          onChange={(e) => setSmsCodeInput(e.target.value)}
-                          placeholder="4829"
-                          className="w-28 bg-slate-900 border border-emerald-500/30 rounded-lg px-3 py-2 text-white font-mono text-center tracking-widest text-lg font-bold"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsLoggedIn(true);
-                            triggerToast('✅ Успешный вход по СМС! Данные защищены в контуре РФ.');
-                          }}
-                          className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold font-mono transition-all"
-                        >
-                          Подтвердить и Войти
-                        </button>
+                    <div className="space-y-3 pt-3 border-t border-white/10 animate-fade-in">
+                      {activeOtpInfo?.channel === 'flash_call' ? (
+                        <div className="p-2.5 rounded-lg bg-amber-950/50 border border-amber-500/30 text-amber-200 text-xs space-y-1">
+                          <div className="font-bold flex items-center justify-between">
+                            <span className="flex items-center gap-1.5">
+                              <PhoneCall className="w-4 h-4 text-amber-400 animate-pulse" />
+                              <span>Ожидайте входящий звонок-сброс...</span>
+                            </span>
+                            <span className="text-[10px] font-mono text-amber-300 bg-amber-900/60 px-1.5 py-0.5 rounded">
+                              Код в номере: {activeOtpInfo.demoCodePreview}
+                            </span>
+                          </div>
+                          <p className="text-[10.5px] text-amber-300/80 leading-normal">
+                            Поступит звонок с номера <b>{activeOtpInfo.callerNumber || '+7 (924) 845-XXXX'}</b>. Брать трубку не нужно. Введите <b>последние 4 цифры</b> этого входящего номера.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="p-2.5 rounded-lg bg-red-950/40 border border-red-500/30 text-red-200 text-xs flex items-center justify-between">
+                          <span className="flex items-center gap-1.5">
+                            <KeyRound className="w-4 h-4 text-red-400" />
+                            <span>СМС отправлено на {phoneInput}</span>
+                          </span>
+                          <span className="text-[10px] font-mono text-red-300 bg-red-900/60 px-1.5 py-0.5 rounded">
+                            Тест-код: {activeOtpInfo?.demoCodePreview || '4829'}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Code Input & Verification */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-mono text-slate-300 block">
+                          Введите 4-значный код подтверждения:
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            maxLength={6}
+                            value={smsCodeInput}
+                            onChange={(e) => setSmsCodeInput(e.target.value)}
+                            placeholder={activeOtpInfo?.demoCodePreview || "4829"}
+                            className="w-32 bg-slate-900 border border-emerald-500/40 rounded-lg px-3 py-2 text-white font-mono text-center tracking-widest text-lg font-bold focus:outline-none focus:border-emerald-400"
+                          />
+                          <button
+                            type="button"
+                            disabled={isVerifyingCode}
+                            onClick={handleVerifyCode}
+                            className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold font-mono transition-all flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-500/20"
+                          >
+                            {isVerifyingCode ? (
+                              <RefreshCw className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <>
+                                <CheckCircle className="w-4 h-4" />
+                                <span>Подтвердить и Войти</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Error Banner */}
+                      {codeErrorMessage && (
+                        <div className="p-2 rounded bg-red-950/80 border border-red-500/40 text-red-300 text-[11px] flex items-center gap-1.5">
+                          <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+                          <span>{codeErrorMessage}</span>
+                        </div>
+                      )}
+
+                      {/* Security Metadata Banner */}
+                      <div className="flex items-center justify-between text-[9.5px] font-mono text-slate-400 bg-slate-900/80 px-2.5 py-1.5 rounded border border-white/5">
+                        <span className="flex items-center gap-1 text-slate-300">
+                          <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                          <span>Серверный контур РФ: SHA-256 Hashed OTP</span>
+                        </span>
+                        <span className="text-slate-400">TTL: 5 мин | Лимит: 5 попыток</span>
                       </div>
                     </div>
                   )}
+
                 </div>
               )}
 
@@ -615,62 +863,195 @@ ${trkpts}
                 </div>
               )}
 
-              {/* Email + Password Method with Strict Russian Domain Check */}
+              {/* Email Method: OTP (Magic Code) or Password Login */}
               {authMethod === 'email' && (
-                <div className="space-y-3 bg-slate-950/60 p-3 rounded-lg border border-white/5">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-mono text-slate-400 block">
-                      Логин (Адрес электронной почты):
-                    </label>
-                    <input
-                      type="email"
-                      value={emailInput}
-                      onChange={(e) => setEmailInput(e.target.value)}
-                      placeholder="vladimir@yandex.ru"
-                      className={`w-full bg-slate-900 border rounded-lg px-3 py-2 text-xs text-white font-mono ${
-                        !isRussianEmail(emailInput) ? 'border-red-500 text-red-200' : 'border-white/10'
-                      }`}
-                    />
-
-                    {/* Strict Russian Domain Warning */}
-                    {!isRussianEmail(emailInput) && (
-                      <div className="p-2.5 rounded-lg bg-red-950/80 border border-red-500/40 text-red-300 text-[11px] space-y-1">
-                        <div className="font-bold flex items-center gap-1 text-red-200">
-                          <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0" />
-                          <span>Требуется почтовый клиент РФ</span>
-                        </div>
-                        <p className="text-[10px] text-red-300 leading-normal">
-                          По закону РФ в этом контуре разрешена регистрация строго через адреса на российских почтовых сервисах (Яндекс @yandex.ru, Mail.ru @mail.ru, @bk.ru, @inbox.ru, Рамблер @rambler.ru) или выберите вход по СМС / Яндекс ID.
-                        </p>
-                      </div>
-                    )}
-
-                    <label className="text-[10px] font-mono text-slate-400 block pt-1">
-                      Пароль:
-                    </label>
-                    <input
-                      type="password"
-                      value={passwordInput}
-                      onChange={(e) => setPasswordInput(e.target.value)}
-                      className="w-full bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-xs text-white font-mono"
-                    />
-
+                <div className="space-y-3 bg-slate-950/60 p-3.5 rounded-lg border border-white/5">
+                  
+                  {/* Sub-mode Selection: OTP vs Password */}
+                  <div className="flex gap-2 p-1 bg-slate-900 rounded-lg border border-white/5 text-[11px] font-mono">
                     <button
                       type="button"
-                      disabled={!isRussianEmail(emailInput)}
-                      onClick={() => {
-                        setIsLoggedIn(true);
-                        triggerToast('✅ Успешная авторизация по почте РФ: ' + emailInput);
-                      }}
-                      className={`w-full py-2.5 rounded-lg text-xs font-bold font-mono transition-all ${
-                        isRussianEmail(emailInput)
-                          ? 'bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-500/10'
-                          : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                      onClick={() => setEmailAuthType('otp')}
+                      className={`flex-1 py-1.5 rounded text-center transition-all ${
+                        emailAuthType === 'otp' ? 'bg-red-500/20 text-red-300 font-bold border border-red-500/30' : 'text-slate-400 hover:text-white'
                       }`}
                     >
-                      Войти с паролем
+                      📩 Код из письма (Без пароля)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEmailAuthType('password')}
+                      className={`flex-1 py-1.5 rounded text-center transition-all ${
+                        emailAuthType === 'password' ? 'bg-red-500/20 text-red-300 font-bold border border-red-500/30' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      🔑 Постоянный пароль
                     </button>
                   </div>
+
+                  {/* Mode A: Email OTP (Magic Code) */}
+                  {emailAuthType === 'otp' ? (
+                    <div className="space-y-3">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-mono text-slate-400 block">
+                          Адрес электронной почты РФ:
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="email"
+                            value={emailInput}
+                            onChange={(e) => setEmailInput(e.target.value)}
+                            placeholder="vladimir@yandex.ru"
+                            className={`flex-1 bg-slate-900 border rounded-lg px-3 py-2 text-xs text-white font-mono ${
+                              !isRussianEmail(emailInput) ? 'border-red-500 text-red-200' : 'border-white/10 focus:border-red-500'
+                            }`}
+                          />
+                          <button
+                            type="button"
+                            disabled={!isRussianEmail(emailInput) || isSendingCode || resendCooldown > 0}
+                            onClick={() => handleSendCode(emailInput, 'email')}
+                            className={`px-3 py-2 rounded-lg text-xs font-bold font-mono transition-all shrink-0 flex items-center gap-1.5 ${
+                              !isRussianEmail(emailInput) || resendCooldown > 0
+                                ? 'bg-slate-800 text-slate-500 border border-white/5 cursor-not-allowed'
+                                : 'bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-500/10'
+                            }`}
+                          >
+                            {isSendingCode ? (
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                            ) : resendCooldown > 0 ? (
+                              <>
+                                <Clock className="w-3.5 h-3.5" />
+                                <span>{resendCooldown} с</span>
+                              </>
+                            ) : (
+                              <span>{smsSent ? 'Повторить' : 'Запросить код'}</span>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Strict Russian Domain Warning */}
+                      {!isRussianEmail(emailInput) && (
+                        <div className="p-2.5 rounded-lg bg-red-950/80 border border-red-500/40 text-red-300 text-[11px] space-y-1">
+                          <div className="font-bold flex items-center gap-1 text-red-200">
+                            <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0" />
+                            <span>Требуется почтовый клиент РФ</span>
+                          </div>
+                          <p className="text-[10px] text-red-300 leading-normal">
+                            По закону РФ разрешена регистрация только через адреса российских почтовых сервисов (Яндекс @yandex.ru, Mail.ru @mail.ru, @bk.ru, @inbox.ru, Рамблер @rambler.ru).
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Email OTP Verification Block */}
+                      {smsSent && (
+                        <div className="space-y-3 pt-2 border-t border-white/10 animate-fade-in">
+                          <div className="p-2.5 rounded-lg bg-red-950/40 border border-red-500/30 text-red-200 text-xs flex items-center justify-between">
+                            <span className="flex items-center gap-1.5">
+                              <KeyRound className="w-4 h-4 text-red-400" />
+                              <span>Письмо отправлено на {emailInput}</span>
+                            </span>
+                            <span className="text-[10px] font-mono text-red-300 bg-red-900/60 px-1.5 py-0.5 rounded">
+                              Тест-код: {activeOtpInfo?.demoCodePreview || '924810'}
+                            </span>
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-mono text-slate-300 block">
+                              Введите 6-значный одноразовый код из письма:
+                            </label>
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                maxLength={6}
+                                value={smsCodeInput}
+                                onChange={(e) => setSmsCodeInput(e.target.value)}
+                                placeholder={activeOtpInfo?.demoCodePreview || "924810"}
+                                className="w-36 bg-slate-900 border border-emerald-500/40 rounded-lg px-3 py-2 text-white font-mono text-center tracking-widest text-lg font-bold focus:outline-none focus:border-emerald-400"
+                              />
+                              <button
+                                type="button"
+                                disabled={isVerifyingCode}
+                                onClick={handleVerifyCode}
+                                className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold font-mono transition-all flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-500/20"
+                              >
+                                {isVerifyingCode ? (
+                                  <RefreshCw className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <>
+                                    <CheckCircle className="w-4 h-4" />
+                                    <span>Подтвердить и Войти</span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    /* Mode B: Password Auth with Explanation */
+                    <div className="space-y-2.5">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-mono text-slate-400 block">
+                          Логин (E-mail):
+                        </label>
+                        <input
+                          type="email"
+                          value={emailInput}
+                          onChange={(e) => setEmailInput(e.target.value)}
+                          placeholder="vladimir@yandex.ru"
+                          className="w-full bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-xs text-white font-mono"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <div className="flex justify-between items-center">
+                          <label className="text-[10px] font-mono text-slate-400 block">
+                            Придуманный ранее пароль:
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => triggerToast('💡 Для сброса пароля используйте "Код из письма"')}
+                            className="text-[9.5px] font-mono text-red-400 hover:underline"
+                          >
+                            Забыли пароль?
+                          </button>
+                        </div>
+                        <input
+                          type="password"
+                          value={passwordInput}
+                          onChange={(e) => setPasswordInput(e.target.value)}
+                          placeholder="••••••••"
+                          className="w-full bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-xs text-white font-mono"
+                        />
+                      </div>
+
+                      <button
+                        type="button"
+                        disabled={!isRussianEmail(emailInput)}
+                        onClick={() => {
+                          setIsLoggedIn(true);
+                          triggerToast('✅ Успешная авторизация по постоянному паролю: ' + emailInput);
+                        }}
+                        className={`w-full py-2.5 rounded-lg text-xs font-bold font-mono transition-all ${
+                          isRussianEmail(emailInput)
+                            ? 'bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-500/10'
+                            : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                        }`}
+                      >
+                        Войти с паролем
+                      </button>
+
+                      <div className="p-2 rounded bg-slate-900 border border-white/5 text-[10px] font-mono text-slate-400 space-y-1">
+                        <span className="text-slate-300 font-bold block">🔒 Где хранятся пароли?</span>
+                        <p className="text-[9.5px] leading-relaxed">
+                          Пароль задается при первой регистрации. В базе данных (Cloud SQL / PostgreSQL) пароли хранятся <b>исключительно в зашифрованном виде (SHA-256 + Salt / Argon2)</b>. Ни оператор, ни администратор не видят чистый пароль.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                 </div>
               )}
 
@@ -703,16 +1084,6 @@ ${trkpts}
                 </div>
               </div>
 
-              {/* Data Residency Badge */}
-              <div className="p-3 rounded-xl bg-slate-950/80 border border-white/10 text-[10px] font-mono text-slate-400 space-y-1">
-                <span className="text-slate-200 font-bold block flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5 text-red-400" />
-                  <span>Локализация персональных данных (ФЗ-152):</span>
-                </span>
-                <p className="text-slate-400 leading-normal">
-                  📍 Все данные клиентов и капитанов хранятся строго на территории Российской Федерации в дата-центрах Yandex Cloud / SberCloud (Москва и Владивосток).
-                </p>
-              </div>
             </div>
           )}
 
@@ -872,16 +1243,6 @@ ${trkpts}
                 </div>
               </div>
 
-              {/* Data Residency Badge */}
-              <div className="p-3 rounded-xl bg-slate-950/80 border border-white/10 text-[10px] font-mono text-slate-400 space-y-1">
-                <span className="text-slate-200 font-bold block flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>Global Data Residency (GDPR & CCPA):</span>
-                </span>
-                <p className="text-slate-400 leading-normal">
-                  📍 International user data is stored on distributed AWS Europe/US & Cloudflare Edge infrastructure. Not restricted to Russian servers.
-                </p>
-              </div>
             </div>
           )}
 
@@ -984,16 +1345,6 @@ ${trkpts}
                 </div>
               </div>
 
-              {/* Data Residency Badge */}
-              <div className="p-3 rounded-xl bg-slate-950/80 border border-white/10 text-[10px] font-mono text-slate-400 space-y-1">
-                <span className="text-slate-200 font-bold block flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>数据存储与隐私合规 (PIPL):</span>
-                </span>
-                <p className="text-slate-400 leading-normal">
-                  📍 中国游客信息存储于腾讯云/阿里云中国大陆及香港服务器网关，严格遵循《中华人民共和国个人信息保护法》(PIPL) 标准。
-                </p>
-              </div>
             </div>
           )}
 

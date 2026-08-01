@@ -47,7 +47,7 @@ export default function TelegramHubModal({ isOpen, onClose, lang }: TelegramHubM
 
   // Test Notification form state
   const [testChatId, setTestChatId] = useState<string>(tgUser ? String(tgUser.id) : '');
-  const [testTitle, setTestTitle] = useState<string>('⚓ Новая бронь в ФАРВАТЕР JIV Fleet');
+  const [testTitle, setTestTitle] = useState<string>('⚓ Новая бронь в JIV Fleet Vladivostok');
   const [testMessage, setTestMessage] = useState<string>('Капитан принял ваш запрос на аренду яхты "Фрегат" 14 м. Выход от причала Улисс.');
   const [notifyStatus, setNotifyStatus] = useState<any>(null);
   const [sendingNotify, setSendingNotify] = useState<boolean>(false);
@@ -152,7 +152,7 @@ export default function TelegramHubModal({ isOpen, onClose, lang }: TelegramHubM
               </div>
               <p className="text-xs text-slate-400">
                 {lang === 'ru' 
-                  ? 'Интеграция ФАРВАТЕР в Telegram: Mini App, Webhook Бот, PWA адаптация и Уведомления капитанам' 
+                  ? 'Интеграция JIV Fleet в Telegram: Mini App, Webhook Бот, PWA адаптация и Уведомления капитанам' 
                   : 'Full Telegram Mini App integration, webhook bot, captain notifications & deep linking.'}
               </p>
             </div>
@@ -471,7 +471,7 @@ export default function TelegramHubModal({ isOpen, onClose, lang }: TelegramHubM
                 <div className="p-3 rounded-xl bg-slate-950 border border-white/10 space-y-1">
                   <span className="text-emerald-400 font-bold text-xs block">1. Создание бота:</span>
                   <p className="text-xs text-slate-300">
-                    Напишите <a href="https://t.me/BotFather" target="_blank" rel="noreferrer" className="text-sky-400 underline">@BotFather</a> в Telegram команду <code className="bg-black px-1.5 py-0.5 rounded text-emerald-300">/newbot</code> и укажите имя: <strong className="text-white">ФАРВАТЕР Владивосток</strong>.
+                    Напишите <a href="https://t.me/BotFather" target="_blank" rel="noreferrer" className="text-sky-400 underline">@BotFather</a> в Telegram команду <code className="bg-black px-1.5 py-0.5 rounded text-emerald-300">/newbot</code> и укажите имя: <strong className="text-white">JIV Fleet Vladivostok</strong>.
                   </p>
                 </div>
 
@@ -501,7 +501,7 @@ export default function TelegramHubModal({ isOpen, onClose, lang }: TelegramHubM
                 <div className="p-3 rounded-xl bg-slate-950 border border-white/10 space-y-1">
                   <span className="text-emerald-400 font-bold text-xs block">4. Включение Menu Button:</span>
                   <p className="text-xs text-slate-300">
-                    Отправьте <code className="bg-black px-1.5 py-0.5 rounded text-emerald-300">/setmenubutton</code> в @BotFather для вывода запускной кнопки "🚀 ФАРВАТЕР" в диалогах с пользователями.
+                    Отправьте <code className="bg-black px-1.5 py-0.5 rounded text-emerald-300">/setmenubutton</code> в @BotFather для вывода запускной кнопки "🚀 JIV Fleet" в диалогах с пользователями.
                   </p>
                 </div>
               </div>

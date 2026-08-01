@@ -284,7 +284,7 @@ export default function AndroidHubModal({ isOpen, onClose, lang }: AndroidHubMod
                   📱 Прямая установка PWA на Android смартфон без Google Play
                 </span>
                 <p className="text-slate-300 text-xs">
-                  Пользователи во Владивостоке могут сразу же установить ФАРВАТЕР как нативное Android приложение в 1 клик.
+                  Пользователи во Владивостоке могут сразу же установить JIV Fleet как нативное Android приложение в 1 клик.
                 </p>
               </div>
 
@@ -294,7 +294,7 @@ export default function AndroidHubModal({ isOpen, onClose, lang }: AndroidHubMod
                 </div>
 
                 <div>
-                  <h3 className="text-white font-bold text-base">ФАРВАТЕР JIV Fleet Vladivostok</h3>
+                  <h3 className="text-white font-bold text-base">Journey In Vladivostok (JIV Fleet)</h3>
                   <p className="text-xs text-slate-400">Версия 1.0.0 • Android PWA App Container</p>
                 </div>
 
@@ -406,7 +406,7 @@ export default function AndroidHubModal({ isOpen, onClose, lang }: AndroidHubMod
             <div className="space-y-4">
               <div className="p-3.5 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-200 text-xs space-y-1">
                 <span className="font-bold block text-indigo-300">📋 Чек-лист публикации в Google Play Console:</span>
-                <p className="text-slate-300">Четыре простых шага для размещения ФАРВАТЕР в каталоге приложений Android.</p>
+                <p className="text-slate-300">Четыре простых шага для размещения JIV Fleet в каталоге приложений Android.</p>
               </div>
 
               <div className="space-y-3">

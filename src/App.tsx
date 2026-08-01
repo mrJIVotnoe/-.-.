@@ -27,6 +27,7 @@ import SelfHostingModal from './components/SelfHostingModal';
 import TelegramHubModal from './components/TelegramHubModal';
 import WeChatHubModal from './components/WeChatHubModal';
 import AndroidHubModal from './components/AndroidHubModal';
+import UpperTrayHeader from './components/UpperTrayHeader';
 import { initTelegramEnvironment } from './lib/telegramSDK';
 import { initWeChatEnvironment } from './lib/wechatSDK';
 import { LanguageProvider, useTranslation, Language } from './lib/translations';
@@ -430,401 +431,25 @@ function AppContent() {
         </svg>
       </div>
 
-      {/* Primary Floating Header (Glassmorphism + "Antigravity" layout) */}
-      <header className="relative z-20 border-b border-white/10 bg-slate-950/85 backdrop-blur-xl sticky top-0 shadow-2xl shadow-black/60" id="main-app-header">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 flex flex-col xl:flex-row xl:items-center justify-between gap-2.5 xl:gap-4">
-          
-          {/* Top/Left Branding & Right Utility Controls on compact screens */}
-          <div className="flex items-center justify-between gap-3 shrink-0">
-            {/* Logo Badge & Title (Journey In Vladivostok / JIV) */}
-            <div className="flex items-center gap-3 shrink-0 min-w-0">
-              <div 
-                className="flex items-center gap-2.5 cursor-pointer group" 
-                onClick={() => setActiveSection('rent')}
-                id="main-logo-brand"
-              >
-                {/* Stylized New JIV Emblem Badge */}
-                <div className="relative flex items-center justify-center w-8 sm:w-9 h-8 sm:h-9 rounded-xl bg-gradient-to-br from-amber-300 via-amber-400 to-amber-600 text-slate-950 font-extrabold text-sm sm:text-base tracking-tighter shadow-[0_0_18px_rgba(245,158,11,0.4)] group-hover:scale-105 transition-all border border-amber-300/50 shrink-0">
-                  <span>JIV</span>
-                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-amber-200 animate-ping" />
-                </div>
-
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-base sm:text-lg font-black tracking-wider text-white font-sans uppercase leading-none">
-                      JOURNEY IN VLADIVOSTOK
-                    </span>
-                  </div>
-                  <span className="text-[9px] font-mono text-amber-400/90 font-semibold tracking-widest uppercase mt-0.5">
-                    MARINA & YACHT CHARTER
-                  </span>
-                </div>
-              </div>
-
-              <div className="hidden lg:block h-5 w-[1px] bg-white/15" />
-              <span className="hidden lg:block text-[10px] text-slate-300 font-mono tracking-widest uppercase bg-slate-900/60 px-2.5 py-1 rounded-full border border-white/10">
-                {lang === 'ru' ? 'ВЛАДИВОСТОК • ЗАЛИВ ПЕТРА ВЕЛИКОГО' : 'VLADIVOSTOK • PETER THE GREAT GULF'}
-              </span>
-            </div>
-
-            {/* Right Controls for Mobile/Tablet (< xl screens) */}
-            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 xl:hidden">
-              <LanguageDropdown />
-              <div className="flex items-center gap-1 bg-slate-900/80 p-1 rounded-xl border border-white/10 shadow-lg">
-                <button
-                  type="button"
-                  onClick={toggleAutoTheme}
-                  className={`px-2 py-1 rounded-lg text-[10px] font-bold tracking-wider uppercase flex items-center gap-1 transition-all ${
-                    isAutoTheme
-                      ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                      : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                  title={lang === 'ru' ? 'Автоматическая смена по времени суток' : 'Automatic theme'}
-                >
-                  <Clock className={`w-3 h-3 ${isAutoTheme ? 'text-cyan-400 animate-pulse' : 'text-slate-400'}`} />
-                  <span>{lang === 'ru' ? 'Авто' : 'Auto'}</span>
-                </button>
-
-                <div className="w-[1px] h-3 bg-white/10" />
-
-                <button
-                  type="button"
-                  onClick={() => selectManualTheme('pearl')}
-                  className={`p-1 rounded-lg text-[10px] transition-all ${
-                    theme === 'pearl' ? 'bg-amber-400/20 text-amber-300 border border-amber-400/40' : 'text-slate-400 hover:text-white'
-                  }`}
-                  title={lang === 'ru' ? 'Солнечный день' : 'Sunny Day'}
-                >
-                  <Sun className="w-3.5 h-3.5 text-amber-400" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => selectManualTheme('sunset')}
-                  className={`p-1 rounded-lg text-[10px] transition-all ${
-                    theme === 'sunset' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40' : 'text-slate-400 hover:text-white'
-                  }`}
-                  title={lang === 'ru' ? 'Вечерний закат' : 'Sunset'}
-                >
-                  <Sunset className="w-3.5 h-3.5 text-rose-400" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => selectManualTheme('abyss')}
-                  className={`p-1 rounded-lg text-[10px] transition-all ${
-                    theme === 'abyss' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-slate-400 hover:text-white'
-                  }`}
-                  title={lang === 'ru' ? 'Полнолунная ночь' : 'Full Moon Night'}
-                >
-                  <Moon className="w-3.5 h-3.5 text-cyan-400" />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Center Navigation Sections Top Tray (Smooth Horizontal Scroll on any window size!) */}
-          <nav className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto [ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden py-1 max-w-full min-w-0" id="desktop-nav-tabs">
-            <button
-              onClick={() => setActiveSection('auth')}
-              id="nav-tab-auth"
-              className={`px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold tracking-wide transition-all flex items-center gap-1.5 border border-emerald-500/20 shadow-lg shrink-0 whitespace-nowrap ${
-                activeSection === 'auth'
-                  ? 'bg-gradient-to-r from-emerald-950/40 to-slate-900 text-emerald-400 border-emerald-500/50 shadow-emerald-500/10'
-                  : 'bg-emerald-500/5 text-emerald-300 hover:text-white hover:bg-emerald-500/10'
-              }`}
-            >
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              <span>{t('login')}</span>
-            </button>
-
-            {/* Dynamic Role-Based Personal Account / Cabin / Bridge Button (Right after Login) */}
-            {authRole === 'captain' ? (
-              <button
-                onClick={() => setActiveSection('captain')}
-                id="nav-tab-cabin-captain"
-                className={`px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold tracking-wide transition-all flex items-center gap-1.5 relative border shrink-0 whitespace-nowrap shadow-md ${
-                  activeSection === 'captain'
-                    ? 'bg-gradient-to-r from-amber-950/50 via-slate-900 to-amber-950/40 text-amber-400 border-amber-500/60 shadow-amber-500/10'
-                    : 'bg-amber-500/10 text-amber-300 hover:text-white hover:bg-amber-500/20 border-amber-500/30'
-                }`}
-              >
-                <Anchor className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                <span>{lang === 'ru' ? 'Мостик Капитана' : lang === 'zh' || lang === 'zh-TW' ? '船长驾驶台' : 'Captain Bridge'}</span>
-                <span className="text-[9px] font-mono px-1.5 py-0.5 bg-amber-400/20 text-amber-300 rounded font-black border border-amber-400/30">
-                  CAPTAIN
-                </span>
-              </button>
-            ) : authRole === 'partner' ? (
-              <button
-                onClick={() => setActiveSection('partner')}
-                id="nav-tab-cabin-partner"
-                className={`px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold tracking-wide transition-all flex items-center gap-1.5 relative border shrink-0 whitespace-nowrap shadow-md ${
-                  activeSection === 'partner'
-                    ? 'bg-gradient-to-r from-cyan-950/50 via-slate-900 to-cyan-950/40 text-cyan-400 border-cyan-500/60 shadow-cyan-500/10'
-                    : 'bg-cyan-500/10 text-cyan-300 hover:text-white hover:bg-cyan-500/20 border-cyan-500/30'
-                }`}
-              >
-                <Building2 className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                <span>{lang === 'ru' ? 'Мостик Партнёра' : lang === 'zh' || lang === 'zh-TW' ? '合作伙伴中心' : 'Partner Hub'}</span>
-                <span className="text-[9px] font-mono px-1.5 py-0.5 bg-cyan-400/20 text-cyan-300 rounded font-black border border-cyan-400/30">
-                  PARTNER
-                </span>
-              </button>
-            ) : (
-              <button
-                onClick={() => setActiveSection('cabin')}
-                id="nav-tab-cabin"
-                className={`px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold tracking-wide transition-all flex items-center gap-1.5 relative border border-rose-500/20 shrink-0 whitespace-nowrap ${
-                  activeSection === 'cabin'
-                    ? 'bg-gradient-to-r from-rose-950/40 to-slate-900 text-rose-400 shadow-md border-rose-500/50'
-                    : 'bg-rose-500/5 text-rose-300 hover:text-white hover:bg-rose-500/10'
-                }`}
-              >
-                <User className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-                <span>{t('cabin', 'nav')}</span>
-                <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse" />
-              </button>
-            )}
-
-            <button
-              onClick={() => setActiveSection('rent')}
-              id="nav-tab-rent"
-              className={`px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs font-bold tracking-wide transition-all flex items-center gap-2 relative border shrink-0 whitespace-nowrap group shadow-lg ${
-                activeSection === 'rent'
-                  ? 'bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-slate-950 border-amber-300 shadow-amber-500/30 font-black scale-[1.03]'
-                  : 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 hover:text-amber-100 border-amber-500/40 hover:border-amber-400/70 shadow-amber-500/10'
-              }`}
-            >
-              <Ship className={`w-4 h-4 shrink-0 transition-transform ${activeSection === 'rent' ? 'text-slate-950' : 'text-amber-400 group-hover:scale-110'}`} />
-              <span>{t('rent', 'nav')}</span>
-              <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded-md font-extrabold uppercase border ${
-                activeSection === 'rent' 
-                  ? 'bg-slate-950/90 text-amber-300 border-amber-300/60' 
-                  : 'bg-amber-400/20 text-amber-300 border-amber-400/30'
-              }`}>
-                FLEET
-              </span>
-            </button>
-
-            {/* Hidden / Tucked Tray Buttons: Hydromet Center & Radar */}
-            <button
-              type="button"
-              onClick={() => setIsHydrometModalOpen(true)}
-              id="nav-tray-btn-hydromet"
-              className="px-3 py-1.5 sm:py-2 rounded-xl text-xs font-semibold tracking-wide transition-all flex items-center gap-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0 shadow-md group hover:scale-105"
-              title={
-                lang === 'ru' ? 'Открыть Гидрометцентр' :
-                lang === 'zh' ? '打开气象水文中心' :
-                lang === 'ja' ? '気象水文学センターを開く' :
-                lang === 'ko' ? '기상 수문 센터 열기' :
-                'Open Hydromet Center'
-              }
-            >
-              <CloudSun className="w-3.5 h-3.5 text-amber-400 group-hover:rotate-12 transition-transform shrink-0" />
-              <span>
-                {lang === 'ru' ? 'Гидрометцентр' :
-                 lang === 'zh' ? '气象水文中心' :
-                 lang === 'ja' ? '気象水文' :
-                 lang === 'ko' ? '기상수문' :
-                 'Hydromet Center'}
-              </span>
-              <span className="text-[10px] font-mono px-1.5 py-0.5 bg-amber-400/20 text-amber-300 rounded-md font-bold">
-                {weather.windSpeed}{lang === 'ru' ? 'м/с' : 'm/s'}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setIsRadarModalOpen(true)}
-              id="nav-tray-btn-radar"
-              className="px-3 py-1.5 sm:py-2 rounded-xl text-xs font-semibold tracking-wide transition-all flex items-center gap-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shrink-0 shadow-md group hover:scale-105"
-              title={
-                lang === 'ru' ? 'Открыть Интерактивный радар' :
-                lang === 'zh' ? '打开互动雷达' :
-                lang === 'ja' ? 'インタラクティブレーダーを開く' :
-                lang === 'ko' ? '대화형 레이ダー 열기' :
-                'Open Interactive Radar'
-              }
-            >
-              <Radio className="w-3.5 h-3.5 text-cyan-400 animate-pulse shrink-0" />
-              <span>
-                {lang === 'ru' ? 'Интерактивный радар' :
-                 lang === 'zh' ? '互动雷达' :
-                 lang === 'ja' ? 'レーダー' :
-                 lang === 'ko' ? '대화형 레이더' :
-                 'Interactive Radar'}
-              </span>
-              <span className="text-[10px] font-mono px-1.5 py-0.5 bg-cyan-400/20 text-cyan-300 rounded-md font-bold flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                34 {lang === 'ru' ? 'в эфире' : lang === 'zh' ? '在线' : 'live'}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setIsSelfHostingModalOpen(true)}
-              id="nav-tray-btn-selfhosting"
-              className="px-3 py-1.5 sm:py-2 rounded-xl text-xs font-semibold tracking-wide transition-all flex items-center gap-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0 shadow-md group hover:scale-105 font-mono"
-              title={lang === 'ru' ? 'Центр автономного развёртывания (Self-Hosting & Cloud Migration)' : 'Self-Hosting & Cloud Migration'}
-            >
-              <Server className="w-3.5 h-3.5 text-emerald-400 group-hover:rotate-6 transition-transform shrink-0" />
-              <span>
-                {lang === 'ru' ? 'Self-Hosting' : 'Bare-Metal'}
-              </span>
-              <span className="text-[10px] px-1.5 py-0.5 bg-emerald-400/20 text-emerald-300 rounded-md font-bold uppercase">
-                Ready
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setIsTelegramModalOpen(true)}
-              id="nav-tray-btn-telegram"
-              className="px-3 py-1.5 sm:py-2 rounded-xl text-xs font-semibold tracking-wide transition-all flex items-center gap-1.5 bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border border-sky-500/30 shrink-0 shadow-md group hover:scale-105 font-mono"
-              title={lang === 'ru' ? 'Интеграция Telegram Mini App & Bot' : 'Telegram Mini App & Bot Hub'}
-            >
-              <Send className="w-3.5 h-3.5 text-sky-400 group-hover:rotate-[-12deg] transition-transform shrink-0" />
-              <span>
-                Telegram App
-              </span>
-              <span className="text-[10px] px-1.5 py-0.5 bg-sky-400/20 text-sky-300 rounded-md font-bold uppercase">
-                Bot
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setIsWeChatModalOpen(true)}
-              id="nav-tray-btn-wechat"
-              className="px-3 py-1.5 sm:py-2 rounded-xl text-xs font-semibold tracking-wide transition-all flex items-center gap-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0 shadow-md group hover:scale-105 font-mono"
-              title={lang === 'ru' ? 'Интеграция WeChat Mini App & WeChat Pay' : 'WeChat Mini App & WeChat Pay Hub'}
-            >
-              <MessageSquare className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              <span>
-                WeChat App
-              </span>
-              <span className="text-[10px] px-1.5 py-0.5 bg-emerald-400/20 text-emerald-300 rounded-md font-bold uppercase">
-                微信
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setIsAndroidModalOpen(true)}
-              id="nav-tray-btn-android"
-              className="px-3 py-1.5 sm:py-2 rounded-xl text-xs font-semibold tracking-wide transition-all flex items-center gap-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0 shadow-md group hover:scale-105 font-mono"
-              title={lang === 'ru' ? 'Android APK / AAB & PWABuilder Hub' : 'Android APK & PWABuilder Hub'}
-            >
-              <Smartphone className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <span>
-                Android App
-              </span>
-              <span className="text-[10px] px-1.5 py-0.5 bg-amber-400/20 text-amber-300 rounded-md font-bold uppercase">
-                APK/AAB
-              </span>
-            </button>
-
-            <button
-              onClick={() => setActiveSection('shared')}
-              id="nav-tab-shared"
-              className={`px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-semibold tracking-wide transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
-                activeSection === 'shared'
-                  ? 'bg-white/10 text-white shadow-inner font-bold'
-                  : 'text-slate-400 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-              <span>{t('concierge', 'nav')}</span>
-            </button>
-
-            <button
-              onClick={() => setActiveSection('flight')}
-              id="nav-tab-flight"
-              className={`px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-semibold tracking-wide transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
-                activeSection === 'flight'
-                  ? 'bg-white/10 text-white shadow-inner font-bold'
-                  : 'text-slate-400 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              <Compass className="w-3.5 h-3.5 text-amber-400 animate-pulse shrink-0" />
-              <span>{t('captain_hub', 'nav')}</span>
-            </button>
-          </nav>
-
-          {/* Right Utility Controls for Desktop (xl screens) */}
-          <div className="hidden xl:flex items-center gap-2 shrink-0">
-            <LanguageDropdown />
-            <div className="flex items-center gap-1.5 bg-slate-900/80 p-1.5 rounded-xl border border-white/10 shadow-lg" id="theme-selector-lounge-desktop">
-              {/* Auto Switcher Toggle */}
-              <button
-                type="button"
-                onClick={toggleAutoTheme}
-                className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold tracking-wider uppercase flex items-center gap-1.5 transition-all ${
-                  isAutoTheme
-                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
-                    : 'text-slate-400 hover:text-white hover:bg-white/5'
-                }`}
-                title={lang === 'ru' ? 'Автоматическое переключение темы по местному времени суток' : 'Auto theme based on local time of day'}
-              >
-                <Clock className={`w-3.5 h-3.5 ${isAutoTheme ? 'text-cyan-400 animate-pulse' : 'text-slate-400'}`} />
-                <span>{lang === 'ru' ? '🕒 Авто (Время)' : '🕒 Auto'}</span>
-                {isAutoTheme && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
-                )}
-              </button>
-
-              <div className="w-[1px] h-4 bg-white/10" />
-
-              {/* Manual Mode Buttons */}
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => selectManualTheme('pearl')}
-                  className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase flex items-center gap-1.5 transition-all ${
-                    theme === 'pearl'
-                      ? 'bg-amber-400/20 text-amber-300 border border-amber-400/40 shadow-sm font-bold'
-                      : 'text-slate-400 hover:text-white hover:bg-white/5'
-                  }`}
-                  title={lang === 'ru' ? '☀️ Солнечный день' : '☀️ Sunny Day'}
-                >
-                  <Sun className="w-3.5 h-3.5 text-amber-400" />
-                  <span>{lang === 'ru' ? 'День' : 'Day'}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => selectManualTheme('sunset')}
-                  className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase flex items-center gap-1.5 transition-all ${
-                    theme === 'sunset'
-                      ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-sm font-bold'
-                      : 'text-slate-400 hover:text-white hover:bg-white/5'
-                  }`}
-                  title={lang === 'ru' ? '🌅 Вечерний закат' : '🌅 Evening Sunset'}
-                >
-                  <Sunset className="w-3.5 h-3.5 text-rose-400" />
-                  <span>{lang === 'ru' ? 'Закат' : 'Sunset'}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => selectManualTheme('abyss')}
-                  className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase flex items-center gap-1.5 transition-all ${
-                    theme === 'abyss'
-                      ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm font-bold'
-                      : 'text-slate-400 hover:text-white hover:bg-white/5'
-                  }`}
-                  title={lang === 'ru' ? '🌕 Полнолунная ночь' : '🌕 Full Moon Night'}
-                >
-                  <Moon className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>{lang === 'ru' ? 'Ночь' : 'Night'}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-        </div>
-      </header>
+      {/* Upper Tray Header Component (Two-tier responsive layout with scroll controls & quick menu) */}
+      <UpperTrayHeader
+        activeSection={activeSection}
+        setActiveSection={setActiveSection}
+        lang={lang}
+        t={t}
+        authRole={authRole}
+        weather={weather}
+        theme={theme}
+        isAutoTheme={isAutoTheme}
+        toggleAutoTheme={toggleAutoTheme}
+        selectManualTheme={selectManualTheme}
+        onOpenHydromet={() => setIsHydrometModalOpen(true)}
+        onOpenRadar={() => setIsRadarModalOpen(true)}
+        onOpenSelfHosting={() => setIsSelfHostingModalOpen(true)}
+        onOpenTelegram={() => setIsTelegramModalOpen(true)}
+        onOpenWeChat={() => setIsWeChatModalOpen(true)}
+        onOpenAndroid={() => setIsAndroidModalOpen(true)}
+      />
 
       {/* Main Content Area */}
       <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8" id="app-main-body">
@@ -1758,7 +1383,7 @@ function AppContent() {
                 <div>
                   <h3 className="text-xl font-bold text-white font-sans flex items-center gap-2">
                     <span>
-                      {lang === 'ru' ? 'Интерактивный радар фарватера' :
+                      {lang === 'ru' ? 'Интерактивный радар акватории JIV' :
                        lang === 'zh' ? '航道互动雷达' :
                        lang === 'ja' ? '航路インタラクティブレーダー' :
                        lang === 'ko' ? '항로 대화형 레이더' :
@@ -1861,44 +1486,17 @@ function AppContent() {
         lang={lang}
       />
 
-      {/* Decorative Elegant Footer with subtle brand mentions */}
-      <footer className="relative z-10 border-t border-white/5 bg-slate-950/80 py-8 text-center text-xs text-slate-500 space-y-2" id="main-app-footer">
+      {/* Decorative Elegant Footer */}
+      <footer className="relative z-10 border-t border-white/5 bg-slate-950/80 py-6 text-center text-xs text-slate-500 space-y-2" id="main-app-footer">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-2">
             <Anchor className="w-4 h-4 text-cyan-400" />
-            <span className="font-mono text-slate-400">ФАРВАТЕР © 2026 — Акватория Владивостока</span>
+            <span className="font-mono text-slate-400">JIV Fleet Vladivostok © 2026 — Акватория Владивостока</span>
           </div>
-          <div className="flex items-center gap-4 text-[11px]">
-            <button
-              onClick={() => setIsAndroidModalOpen(true)}
-              className="text-amber-400/90 hover:text-amber-300 transition-colors font-mono flex items-center gap-1 underline underline-offset-2"
-            >
-              <Smartphone className="w-3 h-3 text-amber-400" />
-              <span>Android App (PWABuilder)</span>
-            </button>
-            <button
-              onClick={() => setIsTelegramModalOpen(true)}
-              className="text-sky-400/90 hover:text-sky-300 transition-colors font-mono flex items-center gap-1 underline underline-offset-2"
-            >
-              <Send className="w-3 h-3 text-sky-400 rotate-[-12deg]" />
-              <span>Telegram Bot & Mini App</span>
-            </button>
-            <button
-              onClick={() => setIsWeChatModalOpen(true)}
-              className="text-emerald-400/90 hover:text-emerald-300 transition-colors font-mono flex items-center gap-1 underline underline-offset-2"
-            >
-              <MessageSquare className="w-3 h-3 text-emerald-400" />
-              <span>WeChat Mini App (微信)</span>
-            </button>
-            <button
-              onClick={() => setIsSelfHostingModalOpen(true)}
-              className="text-cyan-400/80 hover:text-cyan-300 transition-colors font-mono flex items-center gap-1 underline underline-offset-2"
-            >
-              <Server className="w-3 h-3 text-emerald-400" />
-              <span>{lang === 'ru' ? 'Self-Hosting Hub' : 'Self-Hosting Hub'}</span>
-            </button>
-            <span className="text-slate-600">Система предупреждения акул Shark Shield™</span>
-            <span className="text-slate-600">Поиск по заливу Петра Великого</span>
+          <div className="flex items-center gap-4 text-[11px] text-slate-500 font-mono">
+            <span>Shark Shield™ Safety System</span>
+            <span>•</span>
+            <span>Peter the Great Gulf Marine Charter</span>
           </div>
         </div>
       </footer>

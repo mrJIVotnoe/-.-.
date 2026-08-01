@@ -61,7 +61,7 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 export const translations = {
   ru: {
     common: {
-      brand: 'ФАРВАТЕР',
+      brand: 'JIV FLEET',
       subtitle: 'Единая цифровая платформа маломерного флота Владивостока',
       login: 'Войти',
       logout: 'Выйти',
@@ -214,7 +214,7 @@ export const translations = {
   },
   en: {
     common: {
-      brand: 'FARVATER',
+      brand: 'JIV FLEET',
       subtitle: 'Unified Digital Platform of Vladivostok Light Fleet',
       login: 'Login',
       logout: 'Logout',
@@ -367,7 +367,7 @@ export const translations = {
   },
   zh: {
     common: {
-      brand: '航道平台',
+      brand: 'JIV FLEET',
       subtitle: '海参崴小轮船队统一数字服务平台',
       login: '登录',
       logout: '退出',
@@ -520,7 +520,7 @@ export const translations = {
   },
   ja: {
     common: {
-      brand: 'FARVATER',
+      brand: 'JIV FLEET',
       subtitle: 'ウラジオストк小型船隊統合デジタルプラットフォーム',
       login: 'ログイン',
       logout: 'ログアウト',
@@ -671,7 +671,7 @@ export const translations = {
   },
   ko: {
     common: {
-      brand: 'FARVATER',
+      brand: 'JIV FLEET',
       subtitle: '블라디보스토크 소형 선박 통합 디지털 플랫폼',
       login: '로그인',
       logout: '로그아웃',
