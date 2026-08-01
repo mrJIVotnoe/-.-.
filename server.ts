@@ -13,6 +13,16 @@ const app = express();
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const HOST = process.env.HOST || '0.0.0.0';
 
+type AppMode = 'demo' | 'local' | 'staging' | 'production';
+const APP_MODE = (process.env.APP_MODE || (process.env.NODE_ENV === 'production' ? 'local' : 'demo')) as AppMode;
+const ALLOW_DEMO_INTEGRATIONS = APP_MODE === 'demo' || APP_MODE === 'local';
+
+function resolveRuntimeFile(...segments: string[]) {
+  return process.env.NODE_ENV === 'production'
+    ? path.join(process.cwd(), 'dist', ...segments)
+    : path.join(currentDirname, 'public', ...segments);
+}
+
 app.use(express.json({ limit: '10mb' }));
 
 // Request logging middleware
@@ -45,6 +55,8 @@ app.get('/api/status', (req, res) => {
   res.json({
     appName: 'JIV Vladivostok Fleet Management Platform',
     mode: process.env.NODE_ENV || 'development',
+    appMode: APP_MODE,
+    demoIntegrationsEnabled: ALLOW_DEMO_INTEGRATIONS,
     selfHostedReady: true,
     migrationCompatibility: ['Yandex.Cloud (YCR/YDB)', 'Sber Cloud.ru (CCE/SWR)', 'Docker Compose', 'Bare Metal'],
     databaseDriver: process.env.DATABASE_URL ? 'PostgreSQL' : 'Local Persistence (JSON / LocalStorage)',
@@ -78,7 +90,7 @@ app.get('/api/v1/export-data', (req, res) => {
 // Explicit handler for /.well-known/assetlinks.json required for Android TWA
 app.get('/.well-known/assetlinks.json', (req, res) => {
   res.setHeader('Content-Type', 'application/json');
-  res.sendFile(path.join(currentDirname, 'public', '.well-known', 'assetlinks.json'));
+  res.sendFile(resolveRuntimeFile('.well-known', 'assetlinks.json'));
 });
 
 // Android PWA configuration status endpoint
@@ -228,13 +240,17 @@ app.post('/api/telegram/verify-initdata', (req, res) => {
     return res.status(400).json({ valid: false, error: 'initData missing' });
   }
 
-  if (!botToken) {
-    // If bot token isn't configured yet, accept mock/preview data in dev mode
+  if (!botToken && ALLOW_DEMO_INTEGRATIONS) {
+    // If bot token isn't configured yet, accept mock/preview data in demo/local mode
     return res.json({ 
       valid: true, 
       simulated: true, 
-      message: 'Bot token not set; developer validation bypass active.' 
+      message: 'Bot token not set; demo/local validation bypass active.' 
     });
+  }
+
+  if (!botToken) {
+    return res.status(503).json({ valid: false, error: 'TELEGRAM_BOT_TOKEN is required outside demo/local mode' });
   }
 
   try {
@@ -265,8 +281,8 @@ app.post('/api/telegram/verify-initdata', (req, res) => {
 
 // 4a. WeChat Mini App Configuration
 app.get('/api/wechat/config', (req, res) => {
-  const appId = process.env.WECHAT_APP_ID || 'wx1234567890abcdef';
-  const mchId = process.env.WECHAT_MCH_ID || '1600000000';
+  const appId = process.env.WECHAT_APP_ID || (ALLOW_DEMO_INTEGRATIONS ? 'wx1234567890abcdef' : '');
+  const mchId = process.env.WECHAT_MCH_ID || (ALLOW_DEMO_INTEGRATIONS ? '1600000000' : '');
   const appUrl = process.env.APP_URL || 'http://localhost:3000';
   const isConfigured = Boolean(process.env.WECHAT_APP_ID && process.env.WECHAT_APP_SECRET);
 
@@ -298,6 +314,9 @@ app.post('/api/wechat/auth/code2session', async (req, res) => {
 
   // If credentials are not set in dev mode, return simulated session
   if (!appId || !appSecret) {
+    if (!ALLOW_DEMO_INTEGRATIONS) {
+      return res.status(503).json({ error: 'WECHAT_APP_ID and WECHAT_APP_SECRET are required outside demo/local mode' });
+    }
     return res.json({
       openid: `wx_sim_openid_${Date.now().toString(36)}`,
       session_key: 'simulated_session_key',
@@ -319,6 +338,10 @@ app.post('/api/wechat/auth/code2session', async (req, res) => {
 // 4c. WeChat Pay Unified Order (微信支付 - 统一下单)
 app.post('/api/wechat/pay/unifiedorder', async (req, res) => {
   const { openid, bookingId, boatTitle, rubAmount } = req.body;
+
+  if (!ALLOW_DEMO_INTEGRATIONS) {
+    return res.status(503).json({ error: 'WeChat Pay production integration is not configured yet' });
+  }
 
   if (!rubAmount) {
     return res.status(400).json({ error: 'rubAmount is required' });
@@ -501,22 +524,22 @@ app.post('/api/auth/send-code', async (req, res) => {
     if (isRussian) {
       if (channelPreference === 'sms') {
         selectedChannel = 'sms_ru';
-        code = Math.floor(1000 + Math.random() * 9000).toString();
+        code = crypto.randomInt(1000, 10000).toString();
       } else {
         selectedChannel = 'flash_call'; // Flash Call (звонок-сброс) - 3-5x savings!
-        code = Math.floor(1000 + Math.random() * 9000).toString();
+        code = crypto.randomInt(1000, 10000).toString();
         callerNumber = `+7 (924) 845-${code}`;
       }
     } else if (isChinese) {
       selectedChannel = 'sms_cn';
-      code = Math.floor(100000 + Math.random() * 900000).toString();
+      code = crypto.randomInt(100000, 1000000).toString();
     } else {
       selectedChannel = 'sms_intl';
-      code = Math.floor(100000 + Math.random() * 900000).toString();
+      code = crypto.randomInt(100000, 1000000).toString();
     }
   } else {
     selectedChannel = 'email_otp';
-    code = Math.floor(100000 + Math.random() * 900000).toString();
+    code = crypto.randomInt(100000, 1000000).toString();
   }
 
   const codeHash = hashOtpCode(code);
@@ -535,7 +558,11 @@ app.post('/api/auth/send-code', async (req, res) => {
     callerNumber
   });
 
-  console.log(`[AUTH OTP SERVER] Target: ${cleanTarget} | Channel: ${selectedChannel} | Code: ${code} | CallerID: ${callerNumber || 'N/A'}`);
+  if (ALLOW_DEMO_INTEGRATIONS) {
+    console.log(`[AUTH OTP SERVER] Target: ${cleanTarget} | Channel: ${selectedChannel} | Code: ${code} | CallerID: ${callerNumber || 'N/A'}`);
+  } else {
+    console.log(`[AUTH OTP SERVER] Target: ${cleanTarget} | Channel: ${selectedChannel} | CallerID: ${callerNumber || 'N/A'}`);
+  }
 
   res.json({
     success: true,
@@ -545,7 +572,7 @@ app.post('/api/auth/send-code', async (req, res) => {
     resendCooldownSeconds: 60,
     expiresInSeconds: 300,
     callerNumber: callerNumber || undefined,
-    demoCodePreview: code,
+    demoCodePreview: ALLOW_DEMO_INTEGRATIONS ? code : undefined,
     costSavingsNote: selectedChannel === 'flash_call' ? '⚡ Экономия 80%: Использован мгновенный звонок-сброс (Flash Call) — код в последних 4 цифрах номера' : undefined
   });
 });
@@ -685,30 +712,38 @@ app.get('/api/auth/oauth/authorize', (req, res) => {
     const clientId = process.env.YANDEX_CLIENT_ID;
     if (clientId) {
       authUrl = `https://oauth.yandex.ru/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&state=${state}`;
-    } else {
+    } else if (ALLOW_DEMO_INTEGRATIONS) {
       // Sandbox fallback redirect
       authUrl = `/api/auth/oauth/callback?provider=yandex&code=sandbox_code_${state}&state=${state}`;
+    } else {
+      return res.status(503).json({ error: 'YANDEX_CLIENT_ID is required outside demo/local mode' });
     }
   } else if (provider === 'google') {
     const clientId = process.env.GOOGLE_CLIENT_ID;
     if (clientId) {
       authUrl = `https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&scope=openid%20profile%20email&state=${state}`;
-    } else {
+    } else if (ALLOW_DEMO_INTEGRATIONS) {
       authUrl = `/api/auth/oauth/callback?provider=google&code=sandbox_code_${state}&state=${state}`;
+    } else {
+      return res.status(503).json({ error: 'GOOGLE_CLIENT_ID is required outside demo/local mode' });
     }
   } else if (provider === 'apple') {
     const clientId = process.env.APPLE_CLIENT_ID;
     if (clientId) {
       authUrl = `https://appleid.apple.com/auth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&scope=name%20email&response_mode=form_post&state=${state}`;
-    } else {
+    } else if (ALLOW_DEMO_INTEGRATIONS) {
       authUrl = `/api/auth/oauth/callback?provider=apple&code=sandbox_code_${state}&state=${state}`;
+    } else {
+      return res.status(503).json({ error: 'APPLE_CLIENT_ID is required outside demo/local mode' });
     }
   } else if (provider === 'wechat') {
     const appId = process.env.WECHAT_APP_ID;
     if (appId) {
       authUrl = `https://open.weixin.qq.com/connect/qrconnect?appid=${appId}&redirect_uri=${redirectUri}&response_type=code&scope=snsapi_login&state=${state}#wechat_redirect`;
-    } else {
+    } else if (ALLOW_DEMO_INTEGRATIONS) {
       authUrl = `/api/auth/oauth/callback?provider=wechat&code=sandbox_code_${state}&state=${state}`;
+    } else {
+      return res.status(503).json({ error: 'WECHAT_APP_ID is required outside demo/local mode' });
     }
   } else {
     return res.status(400).json({ error: 'Unsupported OAuth provider' });
@@ -726,6 +761,12 @@ app.all('/api/auth/oauth/callback', (req, res) => {
   if (!code) {
     return res.status(400).send('<h3>OAuth Error: Missing code</h3>');
   }
+
+  const storedState = oauthStateStore.get(state);
+  if (!state || !storedState || storedState.provider !== provider || Date.now() - storedState.createdAt > 10 * 60 * 1000) {
+    return res.status(400).send('<h3>OAuth Error: Invalid or expired state</h3>');
+  }
+  oauthStateStore.delete(state);
 
   // Generate verified user profile
   const isSandbox = code.startsWith('sandbox_code_');

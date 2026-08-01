@@ -9,16 +9,16 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 
 # Install build dependencies
-RUN apk add --no-libc-dev python3 make g++
+RUN apk add --no-cache python3 make g++
 
 # Copy package manifests and install dependencies
-COPY package.json bun.lock* ./
-RUN npm ci
+COPY package.json ./
+RUN npm install
 
 # Copy application source code
 COPY . .
 
-# Build Vite frontend static bundle + esbuild bundled CJS Express server
+# Build Vite frontend static bundle + esbuild bundled ESM Express server
 ENV NODE_ENV=production
 RUN npm run build
 
@@ -33,13 +33,14 @@ RUN apk add --no-cache curl
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOST=0.0.0.0
+ENV APP_MODE=local
 
 # Copy build artifacts and package manifest
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package.json ./package.json
 
 # Install runtime production dependencies only
-RUN npm install --only=production --ignore-scripts
+RUN npm install --omit=dev --ignore-scripts
 
 # Create non-root system user for security isolation
 RUN addgroup -g 1001 -S nodejs && \
@@ -55,4 +56,4 @@ HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
   CMD curl -f http://localhost:3000/api/health || exit 1
 
 # Start compiled Express server
-CMD ["node", "dist/server.cjs"]
+CMD ["node", "dist/server.mjs"]
