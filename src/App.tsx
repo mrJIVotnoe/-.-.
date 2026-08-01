@@ -23,6 +23,7 @@ import ReviewsLogbook from './components/ReviewsLogbook';
 import PassengerCabin from './components/PassengerCabin';
 import PartnerBridge from './components/PartnerBridge';
 import MapToolsPanel from './components/MapToolsPanel';
+import VirtualizedVesselList from './components/VirtualizedVesselList';
 import SelfHostingModal from './components/SelfHostingModal';
 import TelegramHubModal from './components/TelegramHubModal';
 import WeChatHubModal from './components/WeChatHubModal';
@@ -980,40 +981,15 @@ function AppContent() {
                 </button>
               </div>
 
-              {/* Grid of Vessels cards / FarPost table row lists */}
+              {/* Grid of Vessels cards / FarPost table row lists (Virtualized for High Performance) */}
               {processedVessels.length > 0 ? (
-                listingsLayout === 'grid' ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="vessels-card-grid">
-                    {processedVessels.map((vessel) => (
-                      <VesselCard 
-                        key={vessel.id}
-                        vessel={vessel}
-                        onSelect={(vs) => {
-                          setSelectedVesselForMap(vs);
-                          // Auto scroll to map wrapper
-                          document.getElementById('sea-map-wrapper')?.scrollIntoView({ behavior: 'smooth' });
-                        }}
-                        onBook={(vs) => setBookingVessel(vs)}
-                        isMapSelected={selectedVesselForMap?.id === vessel.id}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="space-y-4" id="vessels-farpost-rows">
-                    {processedVessels.map((vessel) => (
-                      <FarpostListRow 
-                        key={vessel.id}
-                        vessel={vessel}
-                        onSelect={(vs) => {
-                          setSelectedVesselForMap(vs);
-                          document.getElementById('sea-map-wrapper')?.scrollIntoView({ behavior: 'smooth' });
-                        }}
-                        onBook={(vs) => setBookingVessel(vs)}
-                        isMapSelected={selectedVesselForMap?.id === vessel.id}
-                      />
-                    ))}
-                  </div>
-                )
+                <VirtualizedVesselList
+                  vessels={processedVessels}
+                  listingsLayout={listingsLayout}
+                  selectedVesselForMap={selectedVesselForMap}
+                  onSelectVesselForMap={(vs) => setSelectedVesselForMap(vs)}
+                  onBookVessel={(vs) => setBookingVessel(vs)}
+                />
               ) : (
                 <div className="text-center py-12 rounded-2xl border border-dashed border-white/10 bg-slate-900/20" id="no-vessels-fallback">
                   <Anchor className="w-10 h-10 text-slate-500 mx-auto animate-bounce" />

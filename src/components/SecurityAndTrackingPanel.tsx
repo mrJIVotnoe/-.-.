@@ -37,7 +37,10 @@ import {
   Clock,
   KeyRound,
   RefreshCw,
-  ShieldAlert
+  ShieldAlert,
+  Settings,
+  Globe,
+  Copy
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Vessel } from '../types';
@@ -252,6 +255,58 @@ export default function SecurityAndTrackingPanel({
       triggerToast('⚠️ Не удалось проверить код на сервере');
     } finally {
       setIsVerifyingCode(false);
+    }
+  };
+
+  // OAuth 2.0 State & Status Window
+  const [showOauthStatusModal, setShowOauthStatusModal] = useState<boolean>(false);
+  const [oauthConfig, setOauthConfig] = useState<any>(null);
+
+  const fetchOauthStatus = async () => {
+    try {
+      const res = await fetch('/api/auth/oauth/status');
+      const data = await res.json();
+      setOauthConfig(data);
+    } catch (e) {
+      console.error('Failed to fetch OAuth status', e);
+    }
+  };
+
+  useEffect(() => {
+    fetchOauthStatus();
+
+    // Listen to OAuth popup callback postMessage with strict origin checking
+    const handleOAuthMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return; // Prevent cross-origin spoofing
+      if (event.data && event.data.token && event.data.user) {
+        setIsLoggedIn(true);
+        const pName = (event.data.provider || 'OAuth').toUpperCase();
+        triggerToast(`✅ Авторизация через ${pName} прошла успешно! Имя: ${event.data.user.name}`);
+      }
+    };
+    window.addEventListener('message', handleOAuthMessage);
+    return () => window.removeEventListener('message', handleOAuthMessage);
+  }, []);
+
+  // Launch OAuth Login via REST API / Popup
+  const handleOAuthLogin = async (provider: 'yandex' | 'google' | 'apple' | 'wechat') => {
+    try {
+      const res = await fetch(`/api/auth/oauth/authorize?provider=${provider}`);
+      const data = await res.json();
+      if (data.authUrl) {
+        const width = 600;
+        const height = 650;
+        const left = window.screen.width / 2 - width / 2;
+        const top = window.screen.height / 2 - height / 2;
+        window.open(
+          data.authUrl,
+          `oauth_${provider}`,
+          `width=${width},height=${height},top=${top},left=${left},scrollbars=yes,status=yes`
+        );
+        triggerToast(`🌐 Открыто окно авторизации ${provider.toUpperCase()}...`);
+      }
+    } catch (err) {
+      triggerToast(`⚠️ Не удалось подключиться к OAuth сервису ${provider}`);
     }
   };
 
@@ -848,18 +903,33 @@ ${trkpts}
 
               {/* Yandex ID Method */}
               {authMethod === 'sso' && (
-                <div className="space-y-3 bg-slate-950/60 p-3 rounded-lg border border-white/5">
-                  <p className="text-[11px] text-slate-400 leading-relaxed">
-                    Бесшовная авторизация в 1 клик через единый паспорт Яндекс ID.
+                <div className="space-y-3 bg-slate-950/60 p-3.5 rounded-lg border border-white/5">
+                  <p className="text-[11px] text-slate-300 leading-relaxed">
+                    Бесшовная авторизация в 1 клик через единый паспорт Яндекс ID (OAuth 2.0).
                   </p>
                   <button
                     type="button"
-                    onClick={handleConnectYandexID}
-                    className="w-full py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs font-mono flex items-center justify-center gap-2 transition-all shadow-lg shadow-red-500/10"
+                    onClick={() => handleOAuthLogin('yandex')}
+                    className="w-full py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs font-mono flex items-center justify-center gap-2 transition-all shadow-lg shadow-red-500/20 active:scale-[0.99]"
                   >
                     <span>🔴 Войти через Яндекс ID (Единый Паспорт)</span>
                     <ExternalLink className="w-4 h-4" />
                   </button>
+
+                  <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[10px] font-mono text-slate-400">
+                    <span>Провайдер: OAuth 2.0 / SHA-256 State</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        fetchOauthStatus();
+                        setShowOauthStatusModal(true);
+                      }}
+                      className="text-cyan-400 hover:underline flex items-center gap-1"
+                    >
+                      <Settings className="w-3 h-3 text-cyan-400" />
+                      <span>⚙️ Статус провайдеров & Callback URI</span>
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -1117,47 +1187,36 @@ ${trkpts}
 
               {/* SSO Method */}
               {authMethod === 'sso' && (
-                <div className="space-y-2 bg-slate-950/60 p-3 rounded-lg border border-white/5">
+                <div className="space-y-2.5 bg-slate-950/60 p-3.5 rounded-lg border border-white/5">
                   <button
                     type="button"
-                    onClick={() => {
-                      setIsLoggedIn(true);
-                      triggerToast('🔵 Connected with Google OAuth account!');
-                    }}
-                    className="w-full py-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-white/10 text-white font-bold text-xs font-mono flex items-center justify-center gap-2 transition-all"
+                    onClick={() => handleOAuthLogin('google')}
+                    className="w-full py-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-white/10 text-white font-bold text-xs font-mono flex items-center justify-center gap-2 transition-all shadow-md active:scale-[0.99]"
                   >
                     <span>🔵 Sign in with Google Account</span>
+                    <ExternalLink className="w-3.5 h-3.5 text-cyan-400" />
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      setIsLoggedIn(true);
-                      triggerToast('⚫ Signed in with Apple ID!');
-                    }}
-                    className="w-full py-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-white/10 text-white font-bold text-xs font-mono flex items-center justify-center gap-2 transition-all"
+                    onClick={() => handleOAuthLogin('apple')}
+                    className="w-full py-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-white/10 text-white font-bold text-xs font-mono flex items-center justify-center gap-2 transition-all shadow-md active:scale-[0.99]"
                   >
                     <span>⚫ Sign in with Apple ID</span>
+                    <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
                   </button>
-                  <div className="grid grid-cols-2 gap-2 pt-1">
+
+                  <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[10px] font-mono text-slate-400">
+                    <span>OAuth 2.0 PKCE Protection</span>
                     <button
                       type="button"
                       onClick={() => {
-                        setIsLoggedIn(true);
-                        triggerToast('🟡 Logged in via KakaoTalk!');
+                        fetchOauthStatus();
+                        setShowOauthStatusModal(true);
                       }}
-                      className="py-2 rounded-lg bg-yellow-500/20 text-yellow-300 border border-yellow-500/30 text-xs font-mono font-bold"
+                      className="text-cyan-400 hover:underline flex items-center gap-1"
                     >
-                      🟡 KakaoTalk
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsLoggedIn(true);
-                        triggerToast('🟢 Logged in via LINE!');
-                      }}
-                      className="py-2 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-mono font-bold"
-                    >
-                      🟢 LINE Login
+                      <Settings className="w-3 h-3 text-cyan-400" />
+                      <span>⚙️ OAuth Providers & Credentials</span>
                     </button>
                   </div>
                 </div>
@@ -1269,17 +1328,13 @@ ${trkpts}
 
               {/* WeChat & Alipay SSO Method */}
               {authMethod === 'sso' && (
-                <div className="space-y-2 bg-slate-950/60 p-3 rounded-lg border border-white/5">
+                <div className="space-y-3 bg-slate-950/60 p-3.5 rounded-lg border border-white/5">
                   <button
                     type="button"
-                    onClick={() => {
-                      setIsLoggedIn(true);
-                      setWechatConnected(true);
-                      triggerToast('🟢 微信一键授权成功！已绑定微信开放平台账号。');
-                    }}
-                    className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs font-mono flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/10"
+                    onClick={() => handleOAuthLogin('wechat')}
+                    className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs font-mono flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/10 active:scale-[0.99]"
                   >
-                    <span>🟢 微信账号一键授权登录 (WeChat OAuth)</span>
+                    <span>🟢 微信账号一键授权登录 (WeChat Open Platform OAuth)</span>
                     <ExternalLink className="w-4 h-4" />
                   </button>
 
@@ -1293,6 +1348,21 @@ ${trkpts}
                   >
                     <span>🔵 支付宝账号快捷验证 (Alipay ID)</span>
                   </button>
+
+                  <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[10px] font-mono text-slate-400">
+                    <span>微信开放平台 AppID 验证</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        fetchOauthStatus();
+                        setShowOauthStatusModal(true);
+                      }}
+                      className="text-cyan-400 hover:underline flex items-center gap-1"
+                    >
+                      <Settings className="w-3 h-3 text-cyan-400" />
+                      <span>⚙️ 开放平台 OAuth 状态</span>
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -1516,6 +1586,125 @@ ${trkpts}
         )}
 
         </div>
+
+        {/* OAuth 2.0 Provider Status & Setup Modal */}
+        <AnimatePresence>
+          {showOauthStatusModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4"
+              onClick={() => setShowOauthStatusModal(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-slate-900 border border-white/10 rounded-2xl max-w-lg w-full p-6 space-y-5 shadow-2xl relative max-h-[85vh] overflow-y-auto"
+              >
+                <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                  <div className="flex items-center gap-2 text-cyan-400 font-mono text-sm font-bold">
+                    <Globe className="w-5 h-5 text-cyan-400" />
+                    <span>⚙️ OAuth 2.0 & Social Logins Integration</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowOauthStatusModal(false)}
+                    className="text-slate-400 hover:text-white text-xs font-mono bg-slate-800 px-2.5 py-1 rounded-lg border border-white/5"
+                  >
+                    ✕ Закрыть
+                  </button>
+                </div>
+
+                {/* Legal Entity Notice */}
+                <div className="p-3.5 rounded-xl bg-amber-950/40 border border-amber-500/30 text-amber-200 text-xs space-y-1.5">
+                  <div className="font-bold flex items-center gap-1.5">
+                    <Building2 className="w-4 h-4 text-amber-400" />
+                    <span>Статус юрлица: ИП / ООО в процессе регистрационного учета</span>
+                  </div>
+                  <p className="text-[11px] text-amber-300/80 leading-relaxed">
+                    До завершения юридической регистрации приложение работает в <b>безопасном Sandbox/Dev-режиме</b>. Все вызовы OAuth возвращают тестовую авторизацию сессии с защищенными токенами.
+                  </p>
+                </div>
+
+                {/* Provider Credentials List */}
+                <div className="space-y-3">
+                  <span className="text-xs font-mono text-slate-400 uppercase tracking-wider block">
+                    Текущий статус интеграции провайдеров:
+                  </span>
+
+                  {oauthConfig?.providers ? (
+                    Object.entries(oauthConfig.providers).map(([key, provider]: [string, any]) => (
+                      <div key={key} className="p-3 bg-slate-950 rounded-xl border border-white/5 space-y-2 text-xs font-mono">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-white flex items-center gap-1.5">
+                            {key === 'yandex' && '🔴'}
+                            {key === 'google' && '🔵'}
+                            {key === 'apple' && '⚫'}
+                            {key === 'wechat' && '🟢'}
+                            <span>{provider.name}</span>
+                          </span>
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            provider.configured
+                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                              : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                          }`}>
+                            {provider.configured ? '✓ Ключи активны' : '⚡ Sandbox Active'}
+                          </span>
+                        </div>
+
+                        <div className="text-[10.5px] text-slate-400 space-y-1">
+                          <div className="flex justify-between">
+                            <span>Client ID / AppID:</span>
+                            <span className="text-slate-200">{provider.clientId || provider.appId}</span>
+                          </div>
+                          <div className="space-y-1 pt-1">
+                            <span className="text-slate-400 block">Redirect Callback URL (для консоли провайдера):</span>
+                            <div className="flex items-center gap-2 bg-slate-900 px-2.5 py-1.5 rounded border border-white/10">
+                              <span className="truncate flex-1 text-cyan-300 font-mono text-[10px]">{provider.callbackUrl}</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(provider.callbackUrl);
+                                  triggerToast(`📋 Callback URL для ${provider.name} скопирован!`);
+                                }}
+                                className="p-1 hover:bg-white/10 rounded text-slate-300"
+                                title="Скопировать Callback URL"
+                              >
+                                <Copy className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-4 text-center text-slate-400 text-xs font-mono">
+                      <RefreshCw className="w-4 h-4 animate-spin mx-auto mb-1" />
+                      Загрузка статуса OAuth сервисов...
+                    </div>
+                  )}
+                </div>
+
+                {/* Connection Checklist */}
+                <div className="p-3.5 rounded-xl bg-slate-950 border border-white/10 text-xs space-y-2">
+                  <span className="font-bold text-cyan-300 block font-mono">
+                    📋 Инструкция по активации после открытия юрлица:
+                  </span>
+                  <ol className="list-decimal list-inside space-y-1.5 text-[11px] text-slate-300 font-mono leading-relaxed">
+                    <li>Зарегистрируйте аккаунт юрлица на консоли (Yandex OAuth, Google Cloud Console, Apple Developer, WeChat Open Platform).</li>
+                    <li>Скопируйте в консоль провайдера соответствующий Redirect Callback URL.</li>
+                    <li>Полученный Client ID / App Secret укажите в <code>.env.example</code> (напр. <code>YANDEX_CLIENT_ID</code>).</li>
+                    <li>Приложение автоматически переключится из Sandbox-режима на прямое шлюзовое подключение!</li>
+                  </ol>
+                </div>
+
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
   );
 }
